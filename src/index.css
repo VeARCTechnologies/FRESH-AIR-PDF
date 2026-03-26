@@ -1,0 +1,109 @@
+/* Tinubu PDF Viewer - Scoped Styles (Light Theme) */
+
+body {
+  margin: 0;
+}
+
+/* Animations */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* All viewer styles scoped under .inhouse-viewer to avoid polluting consumer app */
+
+.inhouse-viewer {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.inhouse-viewer *,
+.inhouse-viewer *::before,
+.inhouse-viewer *::after {
+  box-sizing: border-box;
+}
+
+/* Scrollbar Styling */
+.inhouse-viewer ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.inhouse-viewer ::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.inhouse-viewer ::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+  border: 2px solid #f0f0f0;
+}
+
+.inhouse-viewer ::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+.inhouse-viewer ::-webkit-scrollbar-corner {
+  background: #f0f0f0;
+}
+
+/* Button Base Styles */
+.inhouse-viewer button {
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.inhouse-viewer button:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: -2px;
+}
+
+/* Number Input - hide spin buttons */
+.inhouse-viewer input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.inhouse-viewer input[type='number']::-webkit-outer-spin-button,
+.inhouse-viewer input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Input Base Styles */
+.inhouse-viewer input,
+.inhouse-viewer select {
+  font-family: inherit;
+}
+
+.inhouse-viewer input:focus,
+.inhouse-viewer select:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 1px rgba(0, 120, 212, 0.25);
+}
+
+/* Selection */
+.inhouse-viewer ::selection {
+  background: rgba(0, 120, 212, 0.25);
+  color: #000;
+}
+
+/* Utility Classes */
+.inhouse-viewer .no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Page canvas shadow for document pages */
+.inhouse-viewer canvas {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.08);
+  border-radius: 2px;
+}

@@ -1,0 +1,112 @@
+{
+  "annotations": [
+    {
+      "id": "annot_test_1",
+      "type": "highlight",
+      "pageNumber": 1,
+      "quads": [
+        {
+          "x1": 100,
+          "y1": 100,
+          "x2": 300,
+          "y2": 100,
+          "x3": 100,
+          "y3": 130,
+          "x4": 300,
+          "y4": 130
+        }
+      ],
+      "color": "#FFFF00",
+      "opacity": 0.5,
+      "author": "Backend System",
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "modifiedAt": "2024-01-15T10:00:00.000Z"
+    },
+    {
+      "id": "annot_test_2",
+      "type": "free-text",
+      "pageNumber": 1,
+      "rect": {
+        "x": 50,
+        "y": 200,
+        "width": 200,
+        "height": 80
+      },
+      "content": "Sample annotation from backend",
+      "fontSize": 14,
+      "fontFamily": "Arial",
+      "textAlign": "left",
+      "color": "#FF0000",
+      "opacity": 1.0,
+      "author": "Backend System",
+      "createdAt": "2024-01-15T10:05:00.000Z",
+      "modifiedAt": "2024-01-15T10:05:00.000Z"
+    },
+    {
+      "id": "annot_test_3",
+      "type": "rectangle",
+      "pageNumber": 2,
+      "rect": {
+        "x": 150,
+        "y": 150,
+        "width": 250,
+        "height": 150
+      },
+      "fillColor": "#00FF00",
+      "borderWidth": 2,
+      "borderColor": "#000000",
+      "color": "#00FF00",
+      "opacity": 0.3,
+      "author": "Backend System",
+      "createdAt": "2024-01-15T10:10:00.000Z",
+      "modifiedAt": "2024-01-15T10:10:00.000Z"
+    }
+  ],
+  "formFields": [
+    {
+      "id": "field-1",
+      "name": "firstName",
+      "type": "text",
+      "pageNumber": 1,
+      "bounds": {
+        "x": 400,
+        "y": 100,
+        "width": 200,
+        "height": 30
+      },
+      "value": "John Doe",
+      "placeholder": "Enter first name",
+      "required": true,
+      "readOnly": false
+    },
+    {
+      "id": "field-2",
+      "name": "agreeToTerms",
+      "type": "checkbox",
+      "pageNumber": 1,
+      "bounds": {
+        "x": 400,
+        "y": 150,
+        "width": 20,
+        "height": 20
+      },
+      "value": true,
+      "required": true
+    },
+    {
+      "id": "field-3",
+      "name": "country",
+      "type": "dropdown",
+      "pageNumber": 2,
+      "bounds": {
+        "x": 100,
+        "y": 50,
+        "width": 200,
+        "height": 30
+      },
+      "value": "USA",
+      "options": ["USA", "Canada", "UK", "Australia", "Germany"],
+      "required": true
+    }
+  ]
+}
