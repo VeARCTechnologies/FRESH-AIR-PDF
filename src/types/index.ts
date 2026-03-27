@@ -434,3 +434,194 @@ export interface WorkerResponse {
   data?: any
   error?: string
 }
+
+// ============================================================================
+// Template Editor Types
+// ============================================================================
+
+export type TemplateFieldType = 'text' | 'date' | 'number' | 'checkbox' | 'signature' | 'dropdown'
+
+export const TEMPLATE_FIELD_COLORS: Record<TemplateFieldType, string> = {
+  text: '#1565C0',
+  date: '#2E7D32',
+  number: '#00838F',
+  checkbox: '#E65100',
+  signature: '#6A1B9A',
+  dropdown: '#C2185B',
+}
+
+export const TEMPLATE_FIELD_ICONS: Record<TemplateFieldType, string> = {
+  text: 'fas fa-font',
+  date: 'fas fa-calendar-alt',
+  number: 'fas fa-hashtag',
+  checkbox: 'fas fa-check-square',
+  signature: 'fas fa-signature',
+  dropdown: 'fas fa-list',
+}
+
+export interface SystemField {
+  id?: string
+  name: string
+  fieldType: TemplateFieldType
+  category?: string
+  description?: string
+}
+
+export interface SystemFieldCategory {
+  id?: string
+  name: string
+  icon?: string
+  fields: SystemField[]
+}
+
+export interface TemplateField {
+  id: string
+  fieldType: TemplateFieldType
+  name: string
+  description?: string
+  pageNumber: number
+  bounds: Rect
+  systemFieldId?: string
+  systemFieldName?: string
+  defaultValue?: string
+  fontSize?: number
+  borderVisible?: boolean
+  requiredAtGeneration?: boolean
+  multiline?: boolean
+  /** Dropdown field: list of selectable options */
+  options?: string[]
+  /** Date field: display format */
+  dateFormat?: 'DD/MM/YYYY' | 'MM-DD-YYYY' | 'Month D YYYY' | 'YYYY-MM-DD'
+  /** Checkbox field: tick visual style */
+  tickStyle?: 'check' | 'cross' | 'filled'
+  /** Checkbox field: box size in px */
+  boxSize?: number
+  /** Signature field: border style */
+  signatureBorderStyle?: 'solid' | 'dashed' | 'none'
+  /** Signature field: label text above the area */
+  signatureLabel?: string
+}
+
+export interface TemplateInfo {
+  id?: string
+  name: string
+  description?: string
+  createdAt?: Date
+  modifiedAt?: Date
+}
+
+export interface TemplateEditorConfig {
+  readOnly?: boolean
+  maxFileSizeMB?: number
+  workerUrl?: string
+  locale?: string
+  /** When true, users can create fields with custom names (not just from systemFieldCategories). Defaults to false. */
+  allowCustomFields?: boolean
+}
+
+export interface TemplateSavePayload {
+  template: TemplateInfo
+  fields: TemplateField[]
+  /** Ready-to-store JSON string (call JSON.parse to inspect, or store as-is) */
+  exportJson: string
+  /** The original document source (Blob/ArrayBuffer/Uint8Array/URL) that was loaded into the editor */
+  documentSource?: DocumentSource
+}
+
+/**
+ * Versioned export format for template fields.
+ * Store this in your backend; pass it back via `importTemplate()` or `initialFields`.
+ */
+export interface TemplateExportData {
+  version: 1
+  exportedAt: string
+  template?: TemplateInfo
+  fields: TemplateField[]
+}
+
+export interface FATemplateEditorProps {
+  document?: DocumentSource
+  template?: TemplateInfo
+  systemFieldCategories?: SystemFieldCategory[]
+  config?: TemplateEditorConfig
+  initialFields?: TemplateField[]
+  onSave?: (payload: TemplateSavePayload) => void | Promise<void>
+  onDiscard?: () => void
+  onDocumentLoaded?: (event: DocumentLoadedEvent) => void
+  onFieldsChange?: (fields: TemplateField[]) => void
+  className?: string
+  style?: React.CSSProperties
+}
+
+export interface TemplateEditorAPI {
+  loadDocument: (source: DocumentSource) => Promise<void>
+  /** Returns the currently loaded document source (Blob, ArrayBuffer, URL, etc.), or null if nothing loaded */
+  getDocumentSource: () => DocumentSource | null
+  getFields: () => TemplateField[]
+  setFields: (fields: TemplateField[]) => void
+  getUnmappedFields: () => TemplateField[]
+  goToPage: (pageNumber: number) => void
+  setZoom: (zoom: number) => void
+  getZoom: () => number
+  /** Export fields as a versioned JSON string (store in your backend) */
+  exportTemplate: (template?: TemplateInfo) => string
+  /** Import fields from a previously exported JSON string or TemplateExportData object */
+  importTemplate: (json: string | TemplateExportData) => TemplateField[]
+  /** Import fields from Azure Form Recognizer / AI bounding box response */
+  importFromAzure: (response: AzureAnalyzeResponse, options?: AzureImportOptions) => TemplateField[]
+}
+
+// ============================================================================
+// Azure Form Recognizer / AI Bounding Box Types
+// ============================================================================
+
+export interface AzureAnalyzeResponse {
+  status?: string
+  modelId?: string
+  createdDateTime?: string
+  analyzeResult: {
+    pages: AzurePageInfo[]
+    objects: AzureFieldObject[]
+  }
+}
+
+export interface AzurePageInfo {
+  pageNumber: number
+  width: number
+  height: number
+  unit: 'pixel' | 'inch' | 'point'
+}
+
+export interface AzureFieldObject {
+  label: string
+  text?: string
+  confidence?: number
+  boundingBox: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+  polygon?: Array<{ x: number; y: number }>
+  page: number
+}
+
+export interface AzureImportOptions {
+  /** Minimum confidence to include a field (0-1). Defaults to 0. */
+  minConfidence?: number
+  /** Default field type for imported fields. Defaults to 'text'. */
+  defaultFieldType?: TemplateFieldType
+  /** PDF page dimensions (width, height in PDF points) for coordinate scaling. If omitted, uses Azure page dimensions as-is. */
+  pdfPageDimensions?: { width: number; height: number }
+  /** Label-to-field-type mapping, e.g. { "TotalAmount": "number", "Date": "date" } */
+  fieldTypeMap?: Record<string, TemplateFieldType>
+  /** Labels to exclude from import (e.g. "Table", "Image") */
+  excludeLabels?: string[]
+}
+
+export interface DragFieldData {
+  fieldType: TemplateFieldType
+  systemFieldId?: string
+  systemFieldName?: string
+  systemFieldDescription?: string
+}

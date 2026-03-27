@@ -11,8 +11,15 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 export { FAPDFViewer } from '@/components/FAPDFViewer'
 export type { FAPDFViewerProps } from '@/components/FAPDFViewer'
 
-// React hook
+// Template Editor
+export { FATemplateEditor } from '@/components/template-editor/FATemplateEditor'
+
+// React hooks
 export { useViewer } from '@/hooks/useViewer'
+export { useTemplateEditor } from '@/hooks/useTemplateEditor'
+
+// Utilities
+export { convertAzureToFields } from '@/core/utils/azureImport'
 
 // Core engines (for advanced usage)
 export { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
@@ -56,9 +63,25 @@ export type {
   ViewerState,
   WorkerMessage,
   WorkerResponse,
+  // Template Editor types
+  TemplateField,
+  TemplateFieldType,
+  SystemField,
+  SystemFieldCategory,
+  TemplateInfo,
+  TemplateEditorConfig,
+  FATemplateEditorProps,
+  TemplateEditorAPI,
+  TemplateSavePayload,
+  TemplateExportData,
+  AzureAnalyzeResponse,
+  AzurePageInfo,
+  AzureFieldObject,
+  AzureImportOptions,
+  DragFieldData,
 } from '@/types'
 
-// Enums
+// Enums and constants
 export {
   PageRotation,
   ZoomMode,
@@ -66,4 +89,6 @@ export {
   AnnotationType,
   ViewerEvent,
   WorkerMessageType,
+  TEMPLATE_FIELD_COLORS,
+  TEMPLATE_FIELD_ICONS,
 } from '@/types'
