@@ -7,7 +7,6 @@
 
 import type {
   Annotation,
-  AnnotationType,
   AnnotationChangedEvent,
   EventBus,
 } from '@/types'

@@ -16,7 +16,7 @@ export function ReadOnlyViewerExample() {
   
   const handleDownload = () => {
     // Implement download logic
-    window.open(documentUrl, '_blank')
+    window.open('/document.pdf', '_blank')
   }
   
   return (
@@ -103,7 +103,7 @@ export function AnnotationWorkflowExample() {
             enableAnnotations: true,
             readOnly: false,
           }}
-          onAnnotationChanged={(event) => {
+          onAnnotationChanged={(_event) => {
             setAnnotations(viewerRef.current?.getAnnotations() || [])
           }}
         />
@@ -282,32 +282,6 @@ export function FormReviewExample() {
 export function CustomAnnotationToolExample() {
   const viewerRef = useRef<ViewerAPI>(null)
   const [stampMode, setStampMode] = useState(false)
-  
-  const handleCanvasClick = (event: MouseEvent, pageNumber: number) => {
-    if (!stampMode) return
-    
-    // Get click coordinates relative to page
-    const canvas = event.target as HTMLCanvasElement
-    const rect = canvas.getBoundingClientRect()
-    const x = (event.clientX - rect.left) / rect.width
-    const y = (event.clientY - rect.top) / rect.height
-    
-    // Add custom stamp annotation
-    viewerRef.current?.addAnnotation({
-      type: 'free-text',
-      pageNumber,
-      rect: { x, y, width: 0.1, height: 0.05 },
-      content: '✓ APPROVED',
-      fontSize: 16,
-      fontFamily: 'Arial',
-      textAlign: 'center',
-      color: '#00AA00',
-      borderWidth: 2,
-      borderColor: '#00AA00',
-    } as any)
-    
-    setStampMode(false)
-  }
   
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>

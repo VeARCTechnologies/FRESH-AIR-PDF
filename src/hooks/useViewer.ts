@@ -12,7 +12,6 @@ import type {
   DocumentInfo,
   DocumentSource,
   ZoomMode,
-  PageRotation,
   Annotation,
   SearchResult,
   SearchOptions,

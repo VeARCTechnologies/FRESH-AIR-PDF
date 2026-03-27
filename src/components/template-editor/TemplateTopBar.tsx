@@ -33,12 +33,12 @@ interface TemplateTopBarProps {
 export function TemplateTopBar({
   templateName,
   fieldCount,
-  unmappedFieldCount,
+  unmappedFieldCount: _unmappedFieldCount,
   zoom,
   isDirty,
   readOnly = false,
   isFullscreen = false,
-  onSave,
+  onSave: _onSave,
   onDownload,
   hasDocument = false,
   onDiscard,
@@ -54,7 +54,6 @@ export function TemplateTopBar({
 }: TemplateTopBarProps) {
   const [showZoomDropdown, setShowZoomDropdown] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const canSave = unmappedFieldCount === 0
 
   const zoomPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 

@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "Open-source PDF viewer React component powered by PDF.js",
   "license": "MIT",
+  "homepage": "https://vearctechnologies.github.io/PDF-VIEWER/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VeARCTechnologies/PDF-VIEWER.git"
+  },
   "type": "module",
   "main": "dist/fresh-air-pdf.cjs",
   "module": "dist/fresh-air-pdf.mjs",

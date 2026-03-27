@@ -11,7 +11,6 @@ import type {
   DocumentSource,
   PageInfo,
   PageRotation,
-  RenderTask,
   Viewport,
 } from '@/types'
 
@@ -25,7 +24,6 @@ export class PDFDocumentEngine {
   private renderTasks: Map<number, pdfjsLib.RenderTask> = new Map()
   private loadingTask: pdfjsLib.PDFDocumentLoadingTask | null = null
   private isLoading: boolean = false
-  private currentSource: string | null = null
 
   /**
    * Load a PDF document from various sources
@@ -56,8 +54,6 @@ export class PDFDocumentEngine {
     }
 
     this.isLoading = true
-    const sourceKey = typeof source === 'string' ? source : 'blob'
-    this.currentSource = sourceKey
 
     // Cancel any existing render tasks and clear state
     if (this.loadingTask) {
@@ -290,7 +286,6 @@ export class PDFDocumentEngine {
     }
 
     this.isLoading = false
-    this.currentSource = null
   }
 
   /**
