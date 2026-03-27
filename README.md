@@ -1,135 +1,195 @@
 # Fresh Air PDF
 
-An open-source, enterprise-grade PDF viewer built in React, powered by Mozilla's PDF.js.
+An open-source, enterprise-grade PDF viewer React component library powered by Mozilla's PDF.js.
 
-## 🎯 Philosophy
+[![npm version](https://img.shields.io/npm/v/fresh-air-pdf.svg)](https://www.npmjs.com/package/fresh-air-pdf)
+[![license](https://img.shields.io/npm/l/fresh-air-pdf.svg)](https://github.com/VeARCTechnologies/PDF-VIEWER/blob/main/LICENSE)
 
-- **No commercial SDKs** - Built entirely on open standards
-- **Self-hosted** - Your documents never leave your infrastructure
-- **Framework agnostic core** - React UI layer over portable engine
-- **Extensible** - Plugin architecture for custom features
-- **Enterprise ready** - Handles 1000+ page documents efficiently
+## Features
 
-## 🚀 Features
+- **High-fidelity rendering** — Canvas-based PDF rendering via Mozilla's PDF.js
+- **Annotations** — Highlight, underline, strikeout, free text, shapes (rectangle, circle, arrow, line), ink/freehand drawing
+- **Form fields** — Text, checkbox, radio, dropdown, and signature fields with persistent values
+- **Navigation** — Page thumbnails, document outline/bookmarks, page number input
+- **Search** — Full-text search with highlighted results
+- **Zoom & rotation** — Fit width, fit page, custom zoom, 90/180/270 degree rotation
+- **Undo/redo** — Full annotation history (up to 50 entries)
+- **Import/export** — JSON-based persistence for annotations and form fields
+- **Performance** — Virtualized rendering, Web Workers, handles 1000+ page documents
+- **TypeScript** — Fully typed API with exported types
+- **No data leaves the browser** — Self-hosted, your documents stay on your infrastructure
 
-### Document Support
-- ✅ PDF (primary)
-- 🔜 DOCX, XLSX, PPTX (architecture ready)
-
-### Rendering
-- High-fidelity PDF rendering via Canvas
-- Zoom (fit width, fit page, custom zoom levels)
-- Page rotation (90°, 180°, 270°)
-- Smooth scrolling (vertical + horizontal)
-- Virtualized rendering for large documents
-
-### Navigation
-- Page thumbnails panel
-- Page number navigation
-- Document outline/bookmarks
-- Full-text search with highlights
-- Jump to search results
-
-### Annotations
-- Text highlight, underline, strikethrough
-- Free text annotations
-- Shapes (rectangle, circle, arrow, line)
-- Ink/freehand drawing
-- Selection, move, resize, delete
-- Undo/redo support
-- JSON persistence and rehydration
-- Export annotations to PDF
-
-### Performance
-- Web Worker-based PDF parsing
-- Progressive page rendering
-- Memory-efficient virtualization
-- OffscreenCanvas for rendering (when available)
-- No UI blocking
-
-## 📦 Installation
+## Installation
 
 ```bash
-npm install
-npm run dev
+npm install fresh-air-pdf
 ```
 
-## 🎨 Usage
+**Peer dependencies:** React 18+ or 19+
+
+```bash
+npm install react react-dom
+```
+
+## Quick Start
 
 ```tsx
-import { FAPDFViewer } from './components/FAPDFViewer'
+import { FAPDFViewer } from 'fresh-air-pdf';
+import 'fresh-air-pdf/style.css';
 
 function App() {
   return (
     <FAPDFViewer
       document="/path/to/document.pdf"
       onDocumentLoaded={(doc) => console.log('Loaded:', doc)}
-      onAnnotationChanged={(annots) => console.log('Annotations:', annots)}
       config={{
         enableAnnotations: true,
         readOnly: false,
-        theme: 'dark',
       }}
     />
-  )
+  );
 }
 ```
 
-## 🏗️ Architecture
+## Using the Viewer API
+
+Access the viewer programmatically via the `useViewer` hook:
+
+```tsx
+import { FAPDFViewer, useViewer } from 'fresh-air-pdf';
+import 'fresh-air-pdf/style.css';
+
+function App() {
+  const { viewerRef, api } = useViewer();
+
+  const handleExport = () => {
+    const json = api.exportAnnotations();
+    console.log(json);
+  };
+
+  return (
+    <div>
+      <button onClick={handleExport}>Export Annotations</button>
+      <FAPDFViewer ref={viewerRef} document="/document.pdf" />
+    </div>
+  );
+}
+```
+
+## API Reference
+
+### `<FAPDFViewer />` Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `document` | `string \| ArrayBuffer \| Uint8Array` | PDF source — URL, base64, or binary |
+| `config` | `ViewerConfig` | Viewer configuration options |
+| `onDocumentLoaded` | `(doc: DocumentInfo) => void` | Callback when document loads |
+| `onAnnotationChanged` | `(annotations: Annotation[]) => void` | Callback on annotation changes |
+
+### `ViewerAPI` Methods
+
+| Method | Description |
+|--------|-------------|
+| `exportAnnotations()` | Returns JSON string of all annotations and form fields |
+| `importAnnotations(json)` | Imports annotations and form fields from JSON |
+| `getAnnotations(pageNumber?)` | Get annotations, optionally filtered by page |
+| `addAnnotation(annotation)` | Add a new annotation |
+| `updateAnnotation(id, changes)` | Update an existing annotation |
+| `deleteAnnotation(id)` | Delete an annotation |
+| `getFormFields()` | Get all form fields |
+| `setFormFields(fields)` | Set form fields |
+
+### Annotation Types
+
+`highlight` | `underline` | `strikeout` | `freetext` | `rectangle` | `circle` | `arrow` | `line` | `ink`
+
+### Form Field Types
+
+`text` | `checkbox` | `radio` | `dropdown` | `signature`
+
+## Advanced Usage
+
+### Core Engines
+
+For advanced use cases, you can use the core engines directly:
+
+```tsx
+import {
+  PDFDocumentEngine,
+  AnnotationManager,
+  AnnotationRenderer,
+  eventBus,
+} from 'fresh-air-pdf';
+```
+
+### Import/Export Format
+
+```json
+{
+  "annotations": [
+    {
+      "type": "highlight",
+      "pageNumber": 1,
+      "color": "#FFEB3B",
+      "opacity": 0.4,
+      "quads": [[x1, y1, x2, y2, x3, y3, x4, y4]],
+      "text": "selected text"
+    }
+  ],
+  "formFields": [
+    {
+      "name": "email",
+      "type": "text",
+      "pageNumber": 1,
+      "bounds": { "x": 100, "y": 200, "width": 200, "height": 30 },
+      "value": "user@example.com"
+    }
+  ]
+}
+```
+
+## Architecture
 
 ```
 src/
 ├── core/                    # Framework-agnostic engine
 │   ├── engine/             # PDF rendering & parsing
-│   ├── annotations/        # Annotation engine
-│   ├── events/             # Event bus
-│   └── plugins/            # Plugin system
+│   ├── annotations/        # Annotation CRUD + undo/redo
+│   └── events/             # Pub/sub event bus
 ├── components/             # React UI layer
-│   ├── viewer/            # Main viewer component
-│   ├── toolbar/           # Toolbar components
-│   ├── panels/            # Side panels (thumbnails, outline)
-│   └── annotations/       # Annotation UI
-├── hooks/                  # React hooks
-├── types/                  # TypeScript definitions
-└── workers/               # Web Workers
+│   ├── viewer/            # Page rendering & virtualization
+│   ├── toolbar/           # Toolbar
+│   ├── panels/            # Sidebar panels
+│   └── overlays/          # Annotation & form field overlays
+├── hooks/                  # React hooks (useViewer)
+└── types/                  # TypeScript definitions
 ```
 
-## 🔧 Tech Stack
+## Tech Stack
 
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **PDF.js** - PDF parsing (Mozilla's open-source library)
-- **Canvas API** - Rendering
-- **Web Workers** - Background processing
+- **React 18/19** — UI framework
+- **TypeScript** — Full type safety
+- **Vite** — Build tooling (dual ESM/CJS output)
+- **PDF.js** — PDF parsing & rendering (Mozilla)
+- **Canvas API** — Annotation rendering
 
-## 📈 Performance
+## Development
 
-- Handles documents with 1000+ pages
-- Memory-efficient virtualization
-- Progressive rendering
-- Web Worker offloading
-- Optimized for mobile and desktop
+```bash
+git clone https://github.com/VeARCTechnologies/PDF-VIEWER.git
+cd PDF-VIEWER
+npm install
+npm run dev          # Dev server at http://localhost:5173
+npm run build:lib    # Build library (ESM + CJS + types)
+npm run lint         # ESLint
+npm run type-check   # TypeScript checking
+```
 
-## 🔒 Security
+## Contributing
 
-- No data leaves the browser
-- Supports URL, Blob, ArrayBuffer sources
-- Permission system (read-only vs annotate)
-- CSP compliant
+Contributions are welcome! Please open an issue or submit a pull request.
 
-## 🛣️ Roadmap
+## License
 
-- [ ] MVP: PDF rendering + basic navigation
-- [ ] Annotation system
-- [ ] Search functionality
-- [ ] Thumbnail panel
-- [ ] Touch gestures
-- [ ] Export annotations to PDF
-- [ ] DOCX/XLSX support
-- [ ] Form filling
-- [ ] Digital signatures
-
-## 📄 License
-
-MIT
+[MIT](LICENSE)

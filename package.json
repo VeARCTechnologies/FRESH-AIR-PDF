@@ -2,6 +2,7 @@
   "name": "fresh-air-pdf",
   "version": "0.1.0",
   "description": "Open-source PDF viewer React component powered by PDF.js",
+  "license": "MIT",
   "type": "module",
   "main": "dist/fresh-air-pdf.cjs",
   "module": "dist/fresh-air-pdf.mjs",
