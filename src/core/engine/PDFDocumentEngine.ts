@@ -173,7 +173,7 @@ export class PDFDocumentEngine {
       throw new Error('Could not get canvas context')
     }
 
-    const renderContext: pdfjsLib.RenderParameters = {
+    const renderContext = {
       canvasContext: context as any,
       viewport: pdfjsViewport,
     }

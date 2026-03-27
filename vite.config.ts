@@ -10,6 +10,7 @@ export default defineConfig(() => {
   const isLibBuild = process.env.BUILD_MODE === 'lib'
 
   return {
+    base: process.env.BASE_URL || '/',
     plugins: [
       react(),
       viteStaticCopy({

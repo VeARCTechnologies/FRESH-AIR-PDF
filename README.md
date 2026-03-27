@@ -5,6 +5,8 @@ An open-source, enterprise-grade PDF viewer React component library powered by M
 [![npm version](https://img.shields.io/npm/v/fresh-air-pdf.svg)](https://www.npmjs.com/package/fresh-air-pdf)
 [![license](https://img.shields.io/npm/l/fresh-air-pdf.svg)](https://github.com/VeARCTechnologies/PDF-VIEWER/blob/main/LICENSE)
 
+**[Live Demo](https://vearctechnologies.github.io/PDF-VIEWER/)**
+
 ## Features
 
 - **High-fidelity rendering** — Canvas-based PDF rendering via Mozilla's PDF.js

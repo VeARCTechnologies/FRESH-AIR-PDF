@@ -109,7 +109,7 @@ export function buildPdfFromPages(pages: PdfPage[]): Blob {
   write(`${xrefPos}\n`)
   write('%%EOF\n')
 
-  return new Blob(chunks, { type: 'application/pdf' })
+  return new Blob(chunks as BlobPart[], { type: 'application/pdf' })
 }
 
 /** Extract width/height from JPEG data by scanning for SOF markers. */
