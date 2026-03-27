@@ -29,7 +29,7 @@ jobs:
 
       - run: npm run build
         env:
-          BASE_URL: /PDF-VIEWER/
+          BASE_URL: /FRESH-AIR-PDF/
 
       - uses: actions/upload-pages-artifact@v3
         with:
