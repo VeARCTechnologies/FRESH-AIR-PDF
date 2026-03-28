@@ -14,6 +14,7 @@ interface PageTabsBarProps {
   onAddBlankPage?: () => void
   onAddPdfPage?: (file: File) => void
   readOnly?: boolean
+  isMobile?: boolean
 }
 
 export function PageTabsBar({
@@ -23,8 +24,9 @@ export function PageTabsBar({
   onAddBlankPage,
   onAddPdfPage,
   readOnly = false,
+  isMobile = false,
 }: PageTabsBarProps) {
-  const MAX_VISIBLE = 5
+  const MAX_VISIBLE = isMobile ? 3 : 5
   const needsScroll = numPages > MAX_VISIBLE
   const [scrollOffset, setScrollOffset] = useState(0)
   const [showAddMenu, setShowAddMenu] = useState(false)
@@ -101,10 +103,11 @@ export function PageTabsBar({
             style={{
               ...styles.tab,
               ...(page === currentPage ? styles.tabActive : {}),
+              ...(isMobile ? { padding: '4px 10px', fontSize: 11 } : {}),
             }}
             onClick={() => onPageChange(page)}
           >
-            Page {page}
+            {isMobile ? `P${page}` : `Page ${page}`}
           </button>
         ))}
 
@@ -123,12 +126,15 @@ export function PageTabsBar({
         <div style={{ position: 'relative' }}>
           <button
             ref={addButtonRef}
-            style={styles.addPageButton}
+            style={{
+              ...styles.addPageButton,
+              ...(isMobile ? { padding: '4px 8px', fontSize: 11 } : {}),
+            }}
             onClick={() => setShowAddMenu(!showAddMenu)}
             title="Add Page"
           >
-            <i className="fas fa-plus" style={{ marginRight: 4, fontSize: 10 }} />
-            Add Page
+            <i className="fas fa-plus" style={{ marginRight: isMobile ? 0 : 4, fontSize: 10 }} />
+            {!isMobile && 'Add Page'}
           </button>
 
           {showAddMenu && (

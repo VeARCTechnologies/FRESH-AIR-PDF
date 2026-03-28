@@ -28,6 +28,7 @@ interface TemplateTopBarProps {
   onUndo?: () => void
   onRedo?: () => void
   onUploadPdf?: (file: File) => void
+  isMobile?: boolean
 }
 
 export function TemplateTopBar({
@@ -51,18 +52,140 @@ export function TemplateTopBar({
   onUndo,
   onRedo,
   onUploadPdf,
+  isMobile = false,
 }: TemplateTopBarProps) {
   const [showZoomDropdown, setShowZoomDropdown] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const zoomPresets = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 
+  if (isMobile) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#ffffff',
+        borderBottom: '1px solid #e0e0e0',
+        flexShrink: 0,
+      }}>
+        {/* Row 1: Name + badge + upload */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '6px 10px',
+          gap: 6,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#333', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{templateName}</span>
+            <span style={{ ...styles.fieldCountBadge, fontSize: 10, padding: '1px 7px' }}>
+              {fieldCount}
+            </span>
+          </div>
+          {onUploadPdf && (
+            <>
+              <button
+                style={{ ...styles.iconButton, width: 28, height: 28 }}
+                onClick={() => fileInputRef.current?.click()}
+                title="Upload PDF"
+              >
+                <i className="fas fa-file-upload" style={{ fontSize: 12 }} />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) onUploadPdf(file)
+                  e.target.value = ''
+                }}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Row 2: Zoom + Actions — all on one line */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '4px 10px 6px',
+          gap: 4,
+        }}>
+          {/* Zoom controls */}
+          <button style={{ ...styles.iconButton, width: 26, height: 26, fontSize: 11 }} onClick={onZoomOut} title="Zoom Out">
+            <i className="fas fa-minus" />
+          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              style={{ ...styles.zoomLabel, fontSize: 11, minWidth: 38, padding: '2px 4px' }}
+              onClick={() => setShowZoomDropdown(!showZoomDropdown)}
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            {showZoomDropdown && (
+              <>
+                <div style={styles.dropdownBackdrop} onClick={() => setShowZoomDropdown(false)} />
+                <div style={styles.zoomDropdown}>
+                  {zoomPresets.map(preset => (
+                    <button
+                      key={preset}
+                      style={{
+                        ...styles.zoomDropdownItem,
+                        ...(Math.abs(zoom - preset) < 0.01 ? styles.zoomDropdownItemActive : {}),
+                      }}
+                      onClick={() => { onZoomSet(preset); setShowZoomDropdown(false) }}
+                    >
+                      {Math.round(preset * 100)}%
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <button style={{ ...styles.iconButton, width: 26, height: 26, fontSize: 11 }} onClick={onZoomIn} title="Zoom In">
+            <i className="fas fa-plus" />
+          </button>
+
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* Action buttons */}
+          {!readOnly && (
+            <>
+              <button
+                style={{ ...styles.discardButton, fontSize: 11, padding: '4px 8px' }}
+                onClick={onDiscard}
+                disabled={!isDirty}
+              >
+                Discard
+              </button>
+              <button
+                style={{
+                  ...styles.downloadButton,
+                  ...(!hasDocument ? styles.downloadButtonDisabled : {}),
+                  fontSize: 11,
+                  padding: '4px 10px',
+                }}
+                onClick={onDownload}
+                disabled={!hasDocument}
+              >
+                <i className="fas fa-download" style={{ marginRight: 4 }} />
+                Download
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={styles.container}>
       {/* Left: Breadcrumb + field count */}
       <div style={styles.leftSection}>
         <span style={styles.breadcrumbName}>{templateName}</span>
-
         <span style={styles.fieldCountBadge}>
           {fieldCount} {fieldCount === 1 ? 'FIELD' : 'FIELDS'}
         </span>

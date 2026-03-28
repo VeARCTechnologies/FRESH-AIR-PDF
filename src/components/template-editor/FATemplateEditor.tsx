@@ -102,6 +102,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
 
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [dismissedValidation, setDismissedValidation] = useState(false)
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false)
 
     const { isMobile } = useResponsive(containerRef)
     const readOnly = config.readOnly || false
@@ -121,6 +122,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
         requiredAtGeneration: false,
         multiline: false,
       })
+      setShowMobileSidebar(false)
     }, [actions])
 
     // Compute PDF page dimensions (unscaled) for accurate drop coordinate conversion
@@ -504,6 +506,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
           onZoomSet={actions.setZoom}
           onToggleFullscreen={toggleFullscreen}
           onUploadPdf={readOnly ? undefined : handleUpload}
+          isMobile={isMobile}
         />
 
         {/* Page Tabs */}
@@ -515,18 +518,58 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
             onAddBlankPage={actions.addBlankPage}
             onAddPdfPage={handleAddPdfPage}
             readOnly={readOnly}
+            isMobile={isMobile}
           />
         )}
 
         {/* Main Content */}
         <div style={editorStyles.content}>
-          {/* Left Sidebar */}
-          {!readOnly && (
+          {/* Left Sidebar — inline on desktop, slide-over on mobile */}
+          {!readOnly && !isMobile && (
             <TemplateSidebar
               systemFieldCategories={normalizedCategories}
               placedFields={state.fields}
               disabled={!state.documentInfo}
             />
+          )}
+
+          {/* Mobile sidebar toggle button */}
+          {!readOnly && isMobile && (
+            <button
+              style={editorStyles.mobileSidebarToggle}
+              onClick={() => setShowMobileSidebar(true)}
+              title="Open field panel"
+            >
+              <i className="fas fa-th-large" style={{ fontSize: 14 }} />
+            </button>
+          )}
+
+          {/* Mobile sidebar overlay */}
+          {!readOnly && isMobile && showMobileSidebar && (
+            <div style={editorStyles.mobileOverlayBackdrop} onClick={() => setShowMobileSidebar(false)}>
+              <div
+                style={editorStyles.mobileSidebarPanel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={editorStyles.mobileSidebarHeader}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>Fields</span>
+                  <button
+                    style={editorStyles.mobileSidebarClose}
+                    onClick={() => setShowMobileSidebar(false)}
+                  >
+                    <i className="fas fa-times" />
+                  </button>
+                </div>
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                  <TemplateSidebar
+                    systemFieldCategories={normalizedCategories}
+                    placedFields={state.fields}
+                    disabled={!state.documentInfo}
+                    isMobile
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Document Area */}
@@ -535,6 +578,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
             style={{
               ...editorStyles.documentArea,
               ...(isDragOver ? editorStyles.documentAreaDragOver : {}),
+              ...(isMobile ? { padding: 0 } : {}),
             }}
             onClick={handleCanvasBackgroundClick}
           >
@@ -544,7 +588,10 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
                 <p style={editorStyles.loadingText}>Loading document...</p>
               </div>
             ) : state.documentInfo ? (
-              <div ref={pagesWrapperRef} style={editorStyles.pagesContainer}>
+              <div ref={pagesWrapperRef} style={{
+                ...editorStyles.pagesContainer,
+                ...(isMobile ? { padding: 8 } : {}),
+              }}>
                 {renderPages()}
               </div>
             ) : (
@@ -555,21 +602,48 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
             )}
           </div>
 
-          {/* Right Panel: Properties */}
-          <TemplateFieldPropertiesPanel
-            field={state.selectedField}
-            allFields={state.fields}
-            systemFieldCategories={normalizedCategories}
-            allowCustomFields={allowCustomFields}
-            onUpdate={actions.updateField}
-            onDelete={(id) => {
-              actions.deleteField(id)
-              actions.selectField(null)
-            }}
-            onFieldSelect={actions.selectField}
-            onGoToPage={navigateToPage}
-            onClose={() => actions.selectField(null)}
-          />
+          {/* Right Panel: Properties — inline on desktop, overlay on mobile */}
+          {!isMobile && (
+            <TemplateFieldPropertiesPanel
+              field={state.selectedField}
+              allFields={state.fields}
+              systemFieldCategories={normalizedCategories}
+              allowCustomFields={allowCustomFields}
+              onUpdate={actions.updateField}
+              onDelete={(id) => {
+                actions.deleteField(id)
+                actions.selectField(null)
+              }}
+              onFieldSelect={actions.selectField}
+              onGoToPage={navigateToPage}
+              onClose={() => actions.selectField(null)}
+            />
+          )}
+
+          {/* Mobile properties overlay */}
+          {isMobile && state.selectedField && (
+            <div style={editorStyles.mobileOverlayBackdrop} onClick={() => actions.selectField(null)}>
+              <div
+                style={editorStyles.mobilePropertiesPanel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <TemplateFieldPropertiesPanel
+                  field={state.selectedField}
+                  allFields={state.fields}
+                  systemFieldCategories={normalizedCategories}
+                  allowCustomFields={allowCustomFields}
+                  onUpdate={actions.updateField}
+                  onDelete={(id) => {
+                    actions.deleteField(id)
+                    actions.selectField(null)
+                  }}
+                  onFieldSelect={actions.selectField}
+                  onGoToPage={navigateToPage}
+                  onClose={() => actions.selectField(null)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Page indicator with Jump to Page */}
@@ -874,6 +948,7 @@ const editorStyles: Record<string, React.CSSProperties> = {
     flex: 1,
     display: 'flex',
     overflow: 'hidden',
+    position: 'relative' as const,
   },
   documentArea: {
     flex: 1,
@@ -979,5 +1054,72 @@ const editorStyles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  mobileSidebarToggle: {
+    position: 'absolute' as const,
+    top: 10,
+    left: 10,
+    zIndex: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    background: '#ffffff',
+    border: '1px solid #e0e0e0',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: '#555',
+  },
+  mobileOverlayBackdrop: {
+    position: 'fixed' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0,0,0,0.4)',
+    zIndex: 1000,
+    display: 'flex',
+  },
+  mobileSidebarPanel: {
+    width: '85%',
+    maxWidth: 320,
+    height: '100%',
+    background: '#ffffff',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    boxShadow: '4px 0 24px rgba(0,0,0,0.15)',
+  },
+  mobileSidebarHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    borderBottom: '1px solid #e0e0e0',
+    flexShrink: 0,
+  },
+  mobileSidebarClose: {
+    width: 32,
+    height: 32,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    color: '#666',
+    fontSize: 16,
+    cursor: 'pointer',
+  },
+  mobilePropertiesPanel: {
+    position: 'absolute' as const,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '90%',
+    maxWidth: 340,
+    background: '#ffffff',
+    boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+    overflow: 'auto',
   },
 }

@@ -519,6 +519,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    maxWidth: '100%',
   },
   emptyState: {
     display: 'flex',

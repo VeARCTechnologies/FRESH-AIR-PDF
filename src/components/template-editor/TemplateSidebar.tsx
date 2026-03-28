@@ -15,12 +15,14 @@ interface TemplateSidebarProps {
   systemFieldCategories?: SystemFieldCategory[]
   placedFields: TemplateField[]
   disabled?: boolean
+  isMobile?: boolean
 }
 
 export function TemplateSidebar({
   systemFieldCategories = [],
   placedFields,
   disabled = false,
+  isMobile = false,
 }: TemplateSidebarProps) {
   const MIN_WIDTH = 270
   const MAX_WIDTH = 450
@@ -91,7 +93,13 @@ export function TemplateSidebar({
   })).filter(cat => cat.fields.length > 0 || !searchQuery)
 
   return (
-    <div style={{ ...styles.sidebar, width: sidebarWidth, minWidth: sidebarWidth }}>
+    <div style={{
+      ...styles.sidebar,
+      ...(isMobile
+        ? { width: '100%', minWidth: 'unset', borderRight: 'none', height: 'auto', maxHeight: '100%' }
+        : { width: sidebarWidth, minWidth: sidebarWidth }
+      ),
+    }}>
       {/* Field Types Section */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>FIELD TYPES</div>
@@ -182,15 +190,17 @@ export function TemplateSidebar({
         </div>
       )}
 
-      {/* Resize handle with grip icon */}
-      <div
-        style={styles.resizeHandle}
-        onMouseDown={handleResizeMouseDown}
-      >
-        <div style={styles.resizeGrip}>
-          <i className="fas fa-grip-lines-vertical" style={styles.gripIcon} />
+      {/* Resize handle with grip icon — hidden on mobile */}
+      {!isMobile && (
+        <div
+          style={styles.resizeHandle}
+          onMouseDown={handleResizeMouseDown}
+        >
+          <div style={styles.resizeGrip}>
+            <i className="fas fa-grip-lines-vertical" style={styles.gripIcon} />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
