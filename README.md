@@ -9,6 +9,20 @@ A fully-featured, open-source PDF viewer React component with built-in annotatio
 
 ---
 
+## See It in Action
+
+### PDF Viewer — Annotations, Search, Form Fields & More
+
+https://github.com/user-attachments/assets/pdf-viewer-demo.mp4
+
+https://github.com/VeARCTechnologies/FRESH-AIR-PDF/raw/main/docs/pdf-viewer-demo.mp4
+
+### Template Editor — Create & Manage Document Templates
+
+https://github.com/VeARCTechnologies/FRESH-AIR-PDF/raw/main/docs/template-editor-demo.mp4
+
+---
+
 ## Why Fresh Air PDF?
 
 Most React PDF viewers only render pages. If you need annotations, form fields, signatures, or overlays, you're stuck paying for a commercial SDK or stitching together multiple libraries.
