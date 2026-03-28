@@ -44,7 +44,15 @@
     "typescript-pdf",
     "open-source-pdf",
     "self-hosted-pdf",
-    "enterprise-pdf"
+    "enterprise-pdf",
+    "overlay",
+    "fill-pdf",
+    "pdf-fill",
+    "pdf-editor",
+    "pdf-editing",
+    "fillable-pdf",
+    "pdf-form-filling",
+    "fresh-air-pdf"
   ],
   "license": "MIT",
   "homepage": "https://vearctechnologies.github.io/FRESH-AIR-PDF/",
