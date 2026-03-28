@@ -9,6 +9,23 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import type { TemplateField } from '@/types'
 import { TEMPLATE_FIELD_COLORS, TEMPLATE_FIELD_ICONS } from '@/types'
 
+/** Format a date default value according to the field's dateFormat */
+function formatDateValue(value: string, format?: string): string {
+  if (!value) return ''
+  // value is typically ISO: YYYY-MM-DD
+  const parts = value.split('-')
+  if (parts.length !== 3) return value
+  const [y, m, d] = parts
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  switch (format) {
+    case 'DD/MM/YYYY': return `${d}/${m}/${y}`
+    case 'MM-DD-YYYY': return `${m}-${d}-${y}`
+    case 'Month D YYYY': return `${months[parseInt(m, 10) - 1] || m} ${parseInt(d, 10)} ${y}`
+    case 'YYYY-MM-DD': return value
+    default: return `${d}/${m}/${y}`
+  }
+}
+
 // Inject hover styles once
 const styleEl = document.createElement('style')
 styleEl.id = 'template-field-overlay-styles'
@@ -317,7 +334,7 @@ function InteractiveTemplateField({
       onClick={(e) => { e.stopPropagation(); onSelect() }}
     >
       {/* Field type badge — positioned outside, top-left above the field */}
-      <div style={{
+      {(field.labelVisible !== false || isSelected || isHovered) && <div style={{
         position: 'absolute',
         top: -18,
         left: -1,
@@ -343,7 +360,7 @@ function InteractiveTemplateField({
         {isUnmapped && (
           <i className="fas fa-exclamation-triangle" style={{ fontSize: 8, color: '#ffcdd2' }} />
         )}
-      </div>
+      </div>}
 
       {/* Field content inside */}
       <div style={{
@@ -365,7 +382,7 @@ function InteractiveTemplateField({
       }}>
         {field.defaultValue && field.fieldType !== 'checkbox' && (
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {field.defaultValue}
+            {field.fieldType === 'date' ? formatDateValue(field.defaultValue, field.dateFormat) : field.defaultValue}
           </span>
         )}
         {field.fieldType === 'checkbox' && field.defaultValue === 'true' && (

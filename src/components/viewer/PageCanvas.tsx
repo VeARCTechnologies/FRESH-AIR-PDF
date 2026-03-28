@@ -304,17 +304,15 @@ export function PageCanvas({
         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.5)',
         background: '#fff',
         borderRadius: '2px',
-        overflow: 'hidden',
+        // Explicit dimensions so canvas display size = pixel size (no CSS scaling)
+        width: viewport ? viewport.width : undefined,
+        height: viewport ? viewport.height : undefined,
       }}
     >
       {/* PDF Page Canvas */}
       <canvas
         ref={pageCanvasRef}
-        style={{
-          display: 'block',
-          width: '100%',
-          height: 'auto',
-        }}
+        style={{ display: 'block' }}
       />
 
       {/* Annotation Layer Canvas */}
@@ -324,8 +322,6 @@ export function PageCanvas({
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
           pointerEvents: 'none',
         }}
       />

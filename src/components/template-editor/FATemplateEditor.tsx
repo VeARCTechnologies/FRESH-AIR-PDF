@@ -318,6 +318,11 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
               bounds: f.bounds,
               fieldType: f.fieldType,
               defaultValue: f.defaultValue,
+              dateFormat: f.dateFormat,
+              borderVisible: f.borderVisible,
+              fontSize: f.fontSize,
+              multiline: f.multiline,
+              labelVisible: f.labelVisible,
             }))
           drawFieldsOnCanvas(ctx, pageFields, renderScale, TEMPLATE_FIELD_COLORS)
         }

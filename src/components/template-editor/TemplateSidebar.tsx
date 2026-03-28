@@ -6,7 +6,7 @@
  * When not provided, shows only the field type buttons for custom field creation.
  */
 
-import { useState } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import type { SystemFieldCategory, TemplateField } from '@/types'
 import { FieldTypeButton } from './FieldTypeButton'
 import { SystemFieldItem } from './SystemFieldItem'
@@ -22,6 +22,42 @@ export function TemplateSidebar({
   placedFields,
   disabled = false,
 }: TemplateSidebarProps) {
+  const MIN_WIDTH = 270
+  const MAX_WIDTH = 450
+  const [sidebarWidth, setSidebarWidth] = useState(MIN_WIDTH)
+  const isResizing = useRef(false)
+  const startX = useRef(0)
+  const startWidth = useRef(220)
+
+  const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isResizing.current = true
+    startX.current = e.clientX
+    startWidth.current = sidebarWidth
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [sidebarWidth])
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing.current) return
+      const delta = e.clientX - startX.current
+      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth.current + delta))
+      setSidebarWidth(newWidth)
+    }
+    const handleMouseUp = () => {
+      isResizing.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [])
+
   const [searchQuery, setSearchQuery] = useState('')
   const catKey = (cat: { id?: string; name: string }) => cat.id || cat.name
 
@@ -55,7 +91,7 @@ export function TemplateSidebar({
   })).filter(cat => cat.fields.length > 0 || !searchQuery)
 
   return (
-    <div style={styles.sidebar}>
+    <div style={{ ...styles.sidebar, width: sidebarWidth, minWidth: sidebarWidth }}>
       {/* Field Types Section */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>FIELD TYPES</div>
@@ -145,20 +181,58 @@ export function TemplateSidebar({
           </p>
         </div>
       )}
+
+      {/* Resize handle with grip icon */}
+      <div
+        style={styles.resizeHandle}
+        onMouseDown={handleResizeMouseDown}
+      >
+        <div style={styles.resizeGrip}>
+          <i className="fas fa-grip-lines-vertical" style={styles.gripIcon} />
+        </div>
+      </div>
     </div>
   )
 }
 
 const styles: Record<string, React.CSSProperties> = {
   sidebar: {
-    width: 220,
-    minWidth: 220,
+    width: 270,
+    minWidth: 270,
     height: '100%',
     background: '#ffffff',
     borderRight: '1px solid #e0e0e0',
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    position: 'relative',
+  },
+  resizeHandle: {
+    position: 'absolute',
+    top: 0,
+    right: -4,
+    width: 8,
+    height: '100%',
+    cursor: 'col-resize',
+    zIndex: 10,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resizeGrip: {
+    width: 8,
+    height: 32,
+    background: '#e0e0e0',
+    borderRadius: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'background 0.15s ease',
+  },
+  gripIcon: {
+    fontSize: 9,
+    color: '#999',
+    userSelect: 'none' as const,
   },
   section: {
     padding: '12px 12px 0',
@@ -177,7 +251,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   fieldTypeGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 36px)',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(36px, 1fr))',
     gap: 6,
     marginBottom: 4,
   },

@@ -26,6 +26,7 @@ interface ToolbarProps {
   onSearch?: () => void
   onOpenFile?: () => void
   onSave?: () => void
+  onDownload?: () => void
   onPrint?: () => void
   isFullscreen?: boolean
   onToggleFullscreen?: () => void
@@ -48,6 +49,7 @@ export function Toolbar({
   onSearch,
   onOpenFile,
   onSave,
+  onDownload,
   onPrint,
   isFullscreen,
   onToggleFullscreen,
@@ -166,6 +168,7 @@ export function Toolbar({
       <div style={{ ...styles.section, padding: sectionPad, gap: sectionGap }}>
         <ToolButton onClick={() => onOpenFile?.()} title="Open File" icon="fas fa-folder-open" />
         <ToolButton onClick={() => onSave?.()} title="Save" icon="fas fa-save" />
+        <ToolButton onClick={() => onDownload?.()} title="Download PDF" icon="fas fa-download" />
         <ToolButton onClick={() => onPrint?.()} title="Print" icon="fas fa-print" />
       </div>
 

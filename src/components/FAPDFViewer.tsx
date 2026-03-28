@@ -24,6 +24,7 @@ import { PageCanvas } from '@/components/viewer/PageCanvas'
 import { PageRotation } from '@/types'
 import { eventBus } from '@/core/events/EventBus'
 import { ViewerEvent } from '@/types'
+import { buildPdfFromPages, downloadBlob } from '@/utils/canvasToPdf'
 
 export interface FAPDFViewerProps {
   document?: DocumentSource
@@ -458,6 +459,131 @@ export const FAPDFViewer = forwardRef<ViewerAPI, FAPDFViewerProps>(
       }, 300)
     }
 
+    const handleDownload = async () => {
+      if (!state.documentInfo) return
+
+      const numPages = state.documentInfo.numPages
+      const dlScale = 2
+      const renderer = new (await import('@/core/annotations/AnnotationRenderer')).AnnotationRenderer()
+      const pdfPages: { jpeg: ArrayBuffer; width: number; height: number }[] = []
+
+      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        try {
+          const pageInfo = await engine.getPageInfo(pageNum)
+          const viewport = {
+            width: pageInfo.width * dlScale,
+            height: pageInfo.height * dlScale,
+            scale: dlScale,
+            rotation: 0 as const,
+            offsetX: 0,
+            offsetY: 0,
+          }
+
+          const pageCanvas = document.createElement('canvas')
+          await engine.renderPage(pageNum, pageCanvas, viewport)
+
+          // Render annotations on top
+          const pageAnnotations = annotationManager.getAnnotations(pageNum)
+          if (pageAnnotations.length > 0) {
+            const annotCanvas = document.createElement('canvas')
+            renderer.renderAnnotations(pageAnnotations, annotCanvas, viewport)
+            const ctx = pageCanvas.getContext('2d')
+            if (ctx) ctx.drawImage(annotCanvas, 0, 0)
+          }
+
+          // Render form fields on top
+          const pageFields = state.formFields.filter(f => f.pageNumber === pageNum)
+          if (pageFields.length > 0) {
+            const ctx = pageCanvas.getContext('2d')
+            if (ctx) {
+              for (const field of pageFields) {
+                const x = field.bounds.x * dlScale
+                const y = field.bounds.y * dlScale
+                const w = field.bounds.width * dlScale
+                const h = field.bounds.height * dlScale
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'
+                ctx.fillRect(x, y, w, h)
+                ctx.strokeStyle = '#d0d0d0'
+                ctx.lineWidth = 1
+                ctx.strokeRect(x, y, w, h)
+
+                ctx.save()
+                ctx.beginPath()
+                ctx.rect(x, y, w, h)
+                ctx.clip()
+
+                if (field.type === 'text' && field.value) {
+                  ctx.fillStyle = '#333'
+                  ctx.font = `${14 * dlScale}px "Segoe UI", -apple-system, sans-serif`
+                  ctx.textBaseline = 'middle'
+                  ctx.fillText(String(field.value), x + 8 * dlScale, y + h / 2, w - 16 * dlScale)
+                } else if (field.type === 'checkbox') {
+                  const boxSize = 16 * dlScale
+                  const bx = x + (w - boxSize) / 2
+                  const by = y + (h - boxSize) / 2
+                  ctx.strokeStyle = '#666'
+                  ctx.lineWidth = 1.5 * dlScale
+                  ctx.strokeRect(bx, by, boxSize, boxSize)
+                  if (field.value) {
+                    ctx.strokeStyle = '#0078d4'
+                    ctx.lineWidth = 2 * dlScale
+                    ctx.beginPath()
+                    ctx.moveTo(bx + boxSize * 0.2, by + boxSize * 0.5)
+                    ctx.lineTo(bx + boxSize * 0.4, by + boxSize * 0.75)
+                    ctx.lineTo(bx + boxSize * 0.8, by + boxSize * 0.25)
+                    ctx.stroke()
+                  }
+                } else if (field.type === 'dropdown' && field.value) {
+                  ctx.fillStyle = '#333'
+                  ctx.font = `${14 * dlScale}px "Segoe UI", -apple-system, sans-serif`
+                  ctx.textBaseline = 'middle'
+                  ctx.fillText(String(field.value), x + 8 * dlScale, y + h / 2, w - 16 * dlScale)
+                } else if (field.type === 'signature' && typeof field.value === 'string' && (field.value as string).startsWith('data:image/')) {
+                  await new Promise<void>((resolve) => {
+                    const img = new Image()
+                    img.onload = () => {
+                      const padding = 4 * dlScale
+                      const drawW = w - padding * 2
+                      const drawH = h - padding * 2
+                      const imgAspect = img.width / img.height
+                      const boxAspect = drawW / drawH
+                      let dw: number, dh: number
+                      if (imgAspect > boxAspect) { dw = drawW; dh = drawW / imgAspect }
+                      else { dh = drawH; dw = drawH * imgAspect }
+                      ctx.drawImage(img, x + padding + (drawW - dw) / 2, y + padding + (drawH - dh) / 2, dw, dh)
+                      resolve()
+                    }
+                    img.onerror = () => resolve()
+                    img.src = field.value
+                  })
+                }
+
+                ctx.restore()
+              }
+            }
+          }
+
+          // Convert to JPEG
+          const blob = await new Promise<Blob>((resolve) => {
+            pageCanvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
+          })
+          pdfPages.push({
+            jpeg: await blob.arrayBuffer(),
+            width: pageInfo.width,
+            height: pageInfo.height,
+          })
+        } catch (err) {
+          console.error(`Failed to render page ${pageNum} for download:`, err)
+        }
+      }
+
+      const pdfBlob = buildPdfFromPages(pdfPages)
+      const title = state.documentInfo.title || 'document'
+      const filename = title.replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf'
+      downloadBlob(pdfBlob, filename)
+    }
+
     // Expose API via ref (imperative handle)
     useImperativeHandle(ref, () => viewerAPIRef.current, [])
 
@@ -653,6 +779,7 @@ export const FAPDFViewer = forwardRef<ViewerAPI, FAPDFViewerProps>(
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             onToggleFieldsPanel={() => setShowFieldsPanel(!showFieldsPanel)}
             onOpenFile={handleOpenFile}
+            onDownload={handleDownload}
             onPrint={handlePrint}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}

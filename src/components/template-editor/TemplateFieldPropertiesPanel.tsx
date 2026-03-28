@@ -177,106 +177,15 @@ export function TemplateFieldPropertiesPanel({
                 style={styles.fieldNameInput}
               />
             </div>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>FIELD DESCRIPTION</label>
-              <input
-                type="text"
-                value={field.description || ''}
-                onChange={(e) => onUpdate(field.id, { description: e.target.value })}
-                placeholder="Enter field description"
-                style={styles.fieldNameInput}
-              />
-            </div>
           </>
         )}
 
-        {/* System Field Mapping — shown when system fields exist */}
-        {hasSystemFields && (
-          <>
-            <div style={styles.fieldGroup}>
-              <label style={styles.label}>
-                SYSTEM FIELD MAPPING
-                {isUnmapped && !allowCustomFields && <span style={styles.requiredStar}> *</span>}
-              </label>
-              <div style={{ position: 'relative' }}>
-                {field.systemFieldId ? (
-                  <div style={styles.mappedFieldDisplay}>
-                    <span style={styles.mappedFieldName}>{field.systemFieldName}</span>
-                    <button
-                      style={styles.clearMappingButton}
-                      onClick={handleClearMapping}
-                      title="Clear mapping"
-                    >
-                      <i className="fas fa-times" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      ...styles.mappingInput,
-                      borderColor: isUnmapped && !allowCustomFields ? '#E53935' : '#e0e0e0',
-                    }}
-                    onClick={() => setShowMappingDropdown(true)}
-                  >
-                    <input
-                      type="text"
-                      placeholder={allowCustomFields ? 'Optionally map to a system field' : 'Map to a system field'}
-                      value={mappingSearch}
-                      onChange={(e) => {
-                        setMappingSearch(e.target.value)
-                        setShowMappingDropdown(true)
-                      }}
-                      onFocus={() => setShowMappingDropdown(true)}
-                      style={styles.mappingInputInner}
-                    />
-                    <i className="fas fa-chevron-down" style={{ fontSize: 10, color: '#999' }} />
-                  </div>
-                )}
-
-                {showMappingDropdown && !field.systemFieldId && (
-                  <>
-                    <div style={styles.dropdownBackdrop} onClick={() => setShowMappingDropdown(false)} />
-                    <div style={styles.mappingDropdown}>
-                      {filteredSystemFields.length === 0 ? (
-                        <div style={styles.dropdownEmpty}>No matching fields</div>
-                      ) : (
-                        filteredSystemFields.map(cat => (
-                          <div key={cat.id || cat.name}>
-                            <div style={styles.dropdownCategoryHeader}>{cat.name}</div>
-                            {cat.fields.map(sf => (
-                              <button
-                                key={sf.id || sf.name}
-                                style={styles.dropdownItem}
-                                onClick={() => handleMapField(sf)}
-                              >
-                                <span>{sf.name}</span>
-                                <span style={styles.dropdownItemType}>{sf.fieldType}</span>
-                              </button>
-                            ))}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {isUnmapped && !allowCustomFields && (
-                <div style={styles.mappingError}>
-                  <i className="fas fa-exclamation-circle" style={{ marginRight: 4 }} />
-                  Required — map this field to save the template
-                </div>
-              )}
-            </div>
-
-            {/* Field Description */}
-            {mappedSystemField?.description && (
-              <div style={styles.descriptionBox}>
-                <div style={styles.descriptionLabel}>FIELD DESCRIPTION</div>
-                <div style={styles.descriptionText}>{mappedSystemField.description}</div>
-              </div>
-            )}
-          </>
+        {/* Field Description — shown when field has a description from system field */}
+        {field.description && (
+          <div style={styles.descriptionBox}>
+            <div style={styles.descriptionLabel}>FIELD DESCRIPTION</div>
+            <div style={styles.descriptionText}>{field.description}</div>
+          </div>
         )}
 
         {/* Position */}
@@ -525,13 +434,16 @@ export function TemplateFieldPropertiesPanel({
               checked={field.requiredAtGeneration || false}
               onChange={(v) => onUpdate(field.id, { requiredAtGeneration: v })}
             />
-            {(field.fieldType === 'text' || field.fieldType === 'number' || field.fieldType === 'dropdown') && (
-              <ToggleOption
-                label="Border Visible"
-                checked={field.borderVisible !== false}
-                onChange={(v) => onUpdate(field.id, { borderVisible: v })}
-              />
-            )}
+            <ToggleOption
+              label="Border Visible"
+              checked={field.borderVisible !== false}
+              onChange={(v) => onUpdate(field.id, { borderVisible: v })}
+            />
+            <ToggleOption
+              label="Label Visible"
+              checked={field.labelVisible !== false}
+              onChange={(v) => onUpdate(field.id, { labelVisible: v })}
+            />
             {field.fieldType === 'text' && (
               <ToggleOption
                 label="Multi-line"

@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import type { FormField } from '@/types'
 import { SignatureModal } from '../modals/SignatureModal'
 
@@ -94,7 +95,7 @@ export function FormFieldOverlay({
           />
         ))}
       </div>
-      {showSignatureModal && activeSignatureFieldId && (
+      {showSignatureModal && activeSignatureFieldId && createPortal(
         <SignatureModal
           onClose={() => {
             setShowSignatureModal(false)
@@ -102,7 +103,8 @@ export function FormFieldOverlay({
           }}
           onSave={handleSaveSignature}
           existingSignature={fields.find(f => f.id === activeSignatureFieldId)?.value as string | undefined}
-        />
+        />,
+        document.body,
       )}
     </>
   )

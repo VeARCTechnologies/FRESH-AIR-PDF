@@ -486,6 +486,7 @@ export interface TemplateField {
   defaultValue?: string
   fontSize?: number
   borderVisible?: boolean
+  labelVisible?: boolean
   requiredAtGeneration?: boolean
   multiline?: boolean
   /** Dropdown field: list of selectable options */

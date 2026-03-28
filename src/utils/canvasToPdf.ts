@@ -137,7 +137,7 @@ function getJpegDimensions(data: ArrayBuffer): { width: number; height: number }
  */
 export function drawFieldsOnCanvas(
   ctx: CanvasRenderingContext2D,
-  fields: { name: string; bounds: { x: number; y: number; width: number; height: number }; fieldType: string; defaultValue?: string }[],
+  fields: { name: string; bounds: { x: number; y: number; width: number; height: number }; fieldType: string; defaultValue?: string; dateFormat?: string; borderVisible?: boolean; fontSize?: number; multiline?: boolean; labelVisible?: boolean }[],
   scale: number,
   colors: Record<string, string>,
 ) {
@@ -147,31 +147,52 @@ export function drawFieldsOnCanvas(
     const w = field.bounds.width * scale
     const h = field.bounds.height * scale
     const color = colors[field.fieldType] || '#1976D2'
+    const showBorder = field.borderVisible !== false
 
-    // Draw border
-    ctx.strokeStyle = color
-    ctx.lineWidth = 1.5
-    ctx.setLineDash([4, 3])
-    ctx.strokeRect(x, y, w, h)
-    ctx.setLineDash([])
+    if (showBorder) {
+      // Draw border
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1.5
+      ctx.setLineDash([4, 3])
+      ctx.strokeRect(x, y, w, h)
+      ctx.setLineDash([])
 
-    // Light fill
-    ctx.fillStyle = color + '12'
-    ctx.fillRect(x, y, w, h)
+      // Light fill
+      ctx.fillStyle = color + '12'
+      ctx.fillRect(x, y, w, h)
+    }
 
-    // Draw label above the field
-    const fontSize = Math.max(8, Math.min(11, h * 0.35))
-    ctx.font = `600 ${fontSize}px "Segoe UI", -apple-system, sans-serif`
-    ctx.fillStyle = color
-    const label = field.name
-    ctx.fillText(label, x + 3, y - 4, w)
+    // Draw label above the field (skip when labelVisible is false)
+    const labelFontSize = Math.max(8, Math.min(11, h * 0.35))
+    if (field.labelVisible !== false) {
+      ctx.font = `600 ${labelFontSize}px "Segoe UI", -apple-system, sans-serif`
+      ctx.fillStyle = color
+      ctx.fillText(field.name, x + 3, y - 4, w)
+    }
 
     // Draw default value inside (if any)
     if (field.defaultValue) {
-      ctx.font = `400 ${Math.max(9, h * 0.4)}px "Segoe UI", -apple-system, sans-serif`
+      const valueFontSize = field.fontSize ? field.fontSize * scale : Math.max(9, h * 0.4)
+      ctx.font = `400 ${valueFontSize}px "Segoe UI", -apple-system, sans-serif`
       ctx.fillStyle = '#333'
-      ctx.fillText(field.defaultValue, x + 4, y + h / 2 + fontSize * 0.3, w - 8)
+      const displayVal = field.fieldType === 'date' ? formatDateDisplay(field.defaultValue, field.dateFormat) : field.defaultValue
+      ctx.fillText(displayVal, x + 4, y + h / 2 + labelFontSize * 0.3, w - 8)
     }
+  }
+}
+
+/** Format ISO date (YYYY-MM-DD) according to a date format string. */
+function formatDateDisplay(value: string, format?: string): string {
+  const parts = value.split('-')
+  if (parts.length !== 3) return value
+  const [y, m, d] = parts
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+  switch (format) {
+    case 'DD/MM/YYYY': return `${d}/${m}/${y}`
+    case 'MM-DD-YYYY': return `${m}-${d}-${y}`
+    case 'Month D YYYY': return `${months[parseInt(m, 10) - 1] || m} ${parseInt(d, 10)} ${y}`
+    case 'YYYY-MM-DD': return value
+    default: return `${d}/${m}/${y}`
   }
 }
 
