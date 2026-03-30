@@ -20,6 +20,7 @@ export { useTemplateEditor } from '@/hooks/useTemplateEditor'
 
 // Utilities
 export { convertAzureToFields } from '@/core/utils/azureImport'
+export { transformOverlayFields, mapBackendFieldType } from '@/types'
 
 // Core engines (for advanced usage)
 export { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
@@ -79,6 +80,10 @@ export type {
   AzureFieldObject,
   AzureImportOptions,
   DragFieldData,
+  OverlayFieldsResponse,
+  OverlayFieldsResponseItem,
+  OverlayFieldGroup,
+  OverlayFieldDefinition,
 } from '@/types'
 
 // Enums and constants

@@ -61,6 +61,18 @@ function normalizeCategories(categories: SystemFieldCategory[]): SystemFieldCate
         id: f.id || `${catId}--${f.name.toLowerCase().replace(/\s+/g, '-')}`,
         category: f.category || cat.name,
       })),
+      subcategories: cat.subcategories?.map(sub => {
+        const subId = sub.id || `${catId}/${sub.name.toLowerCase().replace(/\s+/g, '-')}`
+        return {
+          ...sub,
+          id: subId,
+          fields: sub.fields.map(f => ({
+            ...f,
+            id: f.id || `${subId}--${f.name.toLowerCase().replace(/\s+/g, '-')}`,
+            category: f.category || `${cat.name} / ${sub.name}`,
+          })),
+        }
+      }),
     }
   })
 }
@@ -325,6 +337,8 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
               fontSize: f.fontSize,
               multiline: f.multiline,
               labelVisible: f.labelVisible,
+              tickStyle: f.tickStyle,
+              boxSize: f.boxSize,
             }))
           drawFieldsOnCanvas(ctx, pageFields, renderScale, TEMPLATE_FIELD_COLORS)
         }
@@ -465,7 +479,10 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
     }
 
     const hasSystemFields = normalizedCategories.length > 0 &&
-      normalizedCategories.some(cat => cat.fields.length > 0)
+      normalizedCategories.some(cat =>
+        cat.fields.length > 0 ||
+        (cat.subcategories && cat.subcategories.some(sub => sub.fields.length > 0))
+      )
     const requireSystemMapping = hasSystemFields && !allowCustomFields
     const showValidation = requireSystemMapping && !dismissedValidation && state.unmappedFieldCount > 0 && !readOnly
 

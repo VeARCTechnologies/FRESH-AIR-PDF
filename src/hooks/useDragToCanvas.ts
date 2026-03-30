@@ -17,6 +17,12 @@ const DEFAULT_FIELD_SIZES: Record<TemplateFieldType, { width: number; height: nu
   checkbox: { width: 30, height: 30 },
   signature: { width: 200, height: 60 },
   dropdown: { width: 180, height: 30 },
+  currency: { width: 140, height: 30 },
+  boolean: { width: 30, height: 30 },
+  decimal: { width: 120, height: 30 },
+  integer: { width: 120, height: 30 },
+  image: { width: 200, height: 120 },
+  formula: { width: 180, height: 30 },
 }
 
 interface UseDragToCanvasOptions {

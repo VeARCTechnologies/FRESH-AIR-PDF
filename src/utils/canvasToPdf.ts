@@ -137,7 +137,7 @@ function getJpegDimensions(data: ArrayBuffer): { width: number; height: number }
  */
 export function drawFieldsOnCanvas(
   ctx: CanvasRenderingContext2D,
-  fields: { name: string; bounds: { x: number; y: number; width: number; height: number }; fieldType: string; defaultValue?: string; dateFormat?: string; borderVisible?: boolean; fontSize?: number; multiline?: boolean; labelVisible?: boolean }[],
+  fields: { name: string; bounds: { x: number; y: number; width: number; height: number }; fieldType: string; defaultValue?: string; dateFormat?: string; borderVisible?: boolean; fontSize?: number; multiline?: boolean; labelVisible?: boolean; tickStyle?: string; boxSize?: number }[],
   scale: number,
   colors: Record<string, string>,
 ) {
@@ -172,11 +172,23 @@ export function drawFieldsOnCanvas(
 
     // Draw default value inside (if any)
     if (field.defaultValue) {
-      const valueFontSize = field.fontSize ? field.fontSize * scale : Math.max(9, h * 0.4)
-      ctx.font = `400 ${valueFontSize}px "Segoe UI", -apple-system, sans-serif`
-      ctx.fillStyle = '#333'
-      const displayVal = field.fieldType === 'date' ? formatDateDisplay(field.defaultValue, field.dateFormat) : field.defaultValue
-      ctx.fillText(displayVal, x + 4, y + h / 2 + labelFontSize * 0.3, w - 8)
+      const isCheckType = field.fieldType === 'checkbox' || field.fieldType === 'boolean'
+      if (isCheckType && field.defaultValue === 'true') {
+        // Draw tick symbol centered in the field
+        const tickSize = Math.max(12, Math.min(h * 0.6, w * 0.6))
+        ctx.font = `400 ${tickSize}px "Segoe UI", -apple-system, sans-serif`
+        ctx.fillStyle = color
+        const tick = field.tickStyle === 'cross' ? '\u2717' : field.tickStyle === 'filled' ? '\u25A0' : '\u2713'
+        ctx.textAlign = 'center'
+        ctx.fillText(tick, x + w / 2, y + h / 2 + tickSize * 0.35)
+        ctx.textAlign = 'start'
+      } else if (!isCheckType) {
+        const valueFontSize = field.fontSize ? field.fontSize * scale : Math.max(9, h * 0.4)
+        ctx.font = `400 ${valueFontSize}px "Segoe UI", -apple-system, sans-serif`
+        ctx.fillStyle = '#333'
+        const displayVal = field.fieldType === 'date' ? formatDateDisplay(field.defaultValue, field.dateFormat) : field.defaultValue
+        ctx.fillText(displayVal, x + 4, y + h / 2 + labelFontSize * 0.3, w - 8)
+      }
     }
   }
 }

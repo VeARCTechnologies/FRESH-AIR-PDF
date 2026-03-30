@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react'
-import type { TemplateField, SystemField, SystemFieldCategory } from '@/types'
+import type { TemplateField, SystemFieldCategory } from '@/types'
 import { TEMPLATE_FIELD_COLORS } from '@/types'
 
 interface TemplateFieldPropertiesPanelProps {
@@ -31,9 +31,6 @@ export function TemplateFieldPropertiesPanel({
   onFieldSelect,
   onGoToPage,
 }: TemplateFieldPropertiesPanelProps) {
-  const [mappingSearch, setMappingSearch] = useState('')
-  const [showMappingDropdown, setShowMappingDropdown] = useState(false)
-
   const hasSystemFields = systemFieldCategories.length > 0 &&
     systemFieldCategories.some(cat => cat.fields.length > 0)
   const requireMapping = hasSystemFields && !allowCustomFields
@@ -41,10 +38,8 @@ export function TemplateFieldPropertiesPanel({
   const [editingOptionIndex, setEditingOptionIndex] = useState<number | null>(null)
   const [editingOptionValue, setEditingOptionValue] = useState('')
 
-  // Reset search when field changes
+  // Reset state when field changes
   useEffect(() => {
-    setMappingSearch('')
-    setShowMappingDropdown(false)
     setNewDropdownOption('')
     setEditingOptionIndex(null)
     setEditingOptionValue('')
@@ -54,19 +49,8 @@ export function TemplateFieldPropertiesPanel({
     return systemFieldCategories.flatMap(cat => cat.fields)
   }, [systemFieldCategories])
 
-  const mappedSystemField = useMemo(() => {
-    if (!field?.systemFieldId) return null
-    return allSystemFields.find(sf => (sf.id || sf.name) === field.systemFieldId) || null
-  }, [field?.systemFieldId, allSystemFields])
-
-  const filteredSystemFields = useMemo(() => {
-    if (!mappingSearch) return systemFieldCategories
-    const q = mappingSearch.toLowerCase()
-    return systemFieldCategories.map(cat => ({
-      ...cat,
-      fields: cat.fields.filter(f => f.name.toLowerCase().includes(q)),
-    })).filter(cat => cat.fields.length > 0)
-  }, [mappingSearch, systemFieldCategories])
+  // Keep references for potential future use (mapping dropdown was removed from UI)
+  void allSystemFields
 
   if (!field) {
     return (
@@ -115,24 +99,6 @@ export function TemplateFieldPropertiesPanel({
   }
 
   const fieldColor = TEMPLATE_FIELD_COLORS[field.fieldType]
-  const isUnmapped = requireMapping && !field.systemFieldId
-
-  const handleMapField = (sf: SystemField) => {
-    onUpdate(field.id, {
-      systemFieldId: sf.id || sf.name,
-      systemFieldName: sf.name,
-      fieldType: sf.fieldType,
-    })
-    setShowMappingDropdown(false)
-    setMappingSearch('')
-  }
-
-  const handleClearMapping = () => {
-    onUpdate(field.id, {
-      systemFieldId: undefined,
-      systemFieldName: undefined,
-    })
-  }
 
   const handleBoundsChange = (key: 'x' | 'y' | 'width' | 'height', value: string) => {
     const num = parseFloat(value)
@@ -202,7 +168,7 @@ export function TemplateFieldPropertiesPanel({
         {/* Default Value */}
         <div style={styles.fieldGroup}>
           <label style={styles.label}>DEFAULT VALUE</label>
-          {field.fieldType === 'checkbox' ? (
+          {(field.fieldType === 'checkbox' || field.fieldType === 'boolean') ? (
             <ToggleOption
               label="Checked by default"
               checked={field.defaultValue === 'true'}
@@ -215,18 +181,27 @@ export function TemplateFieldPropertiesPanel({
               onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
               style={styles.fieldNameInput}
             />
-          ) : field.fieldType === 'number' ? (
+          ) : (field.fieldType === 'number' || field.fieldType === 'currency' || field.fieldType === 'decimal' || field.fieldType === 'integer') ? (
             <input
               type="number"
+              step={field.fieldType === 'integer' ? '1' : 'any'}
               value={field.defaultValue || ''}
               onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
-              placeholder="Enter default number"
+              placeholder={`Enter default ${field.fieldType}`}
               style={styles.fieldNameInput}
             />
-          ) : field.fieldType === 'signature' ? (
+          ) : (field.fieldType === 'signature' || field.fieldType === 'image') ? (
             <span style={{ fontSize: 12, color: '#999', fontStyle: 'italic' }}>
-              Not applicable for signature fields
+              Not applicable for {field.fieldType} fields
             </span>
+          ) : field.fieldType === 'formula' ? (
+            <input
+              type="text"
+              value={field.defaultValue || ''}
+              onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
+              placeholder="Enter formula expression"
+              style={styles.fieldNameInput}
+            />
           ) : (
             <input
               type="text"
@@ -341,7 +316,7 @@ export function TemplateFieldPropertiesPanel({
         )}
 
         {/* Checkbox Style */}
-        {field.fieldType === 'checkbox' && (
+        {(field.fieldType === 'checkbox' || field.fieldType === 'boolean') && (
           <div style={styles.fieldGroup}>
             <label style={styles.label}>CHECKBOX STYLE</label>
             <div>

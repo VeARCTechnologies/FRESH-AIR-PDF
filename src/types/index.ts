@@ -439,7 +439,9 @@ export interface WorkerResponse {
 // Template Editor Types
 // ============================================================================
 
-export type TemplateFieldType = 'text' | 'date' | 'number' | 'checkbox' | 'signature' | 'dropdown'
+export type TemplateFieldType =
+  | 'text' | 'date' | 'number' | 'checkbox' | 'signature' | 'dropdown'
+  | 'currency' | 'boolean' | 'decimal' | 'integer' | 'image' | 'formula'
 
 export const TEMPLATE_FIELD_COLORS: Record<TemplateFieldType, string> = {
   text: '#1565C0',
@@ -448,6 +450,12 @@ export const TEMPLATE_FIELD_COLORS: Record<TemplateFieldType, string> = {
   checkbox: '#E65100',
   signature: '#6A1B9A',
   dropdown: '#C2185B',
+  currency: '#00695C',
+  boolean: '#E65100',
+  decimal: '#00838F',
+  integer: '#0277BD',
+  image: '#4527A0',
+  formula: '#AD1457',
 }
 
 export const TEMPLATE_FIELD_ICONS: Record<TemplateFieldType, string> = {
@@ -457,6 +465,12 @@ export const TEMPLATE_FIELD_ICONS: Record<TemplateFieldType, string> = {
   checkbox: 'fas fa-check-square',
   signature: 'fas fa-signature',
   dropdown: 'fas fa-list',
+  currency: 'fas fa-dollar-sign',
+  boolean: 'fas fa-toggle-on',
+  decimal: 'fas fa-percentage',
+  integer: 'fas fa-sort-numeric-up',
+  image: 'fas fa-image',
+  formula: 'fas fa-calculator',
 }
 
 export interface SystemField {
@@ -472,6 +486,8 @@ export interface SystemFieldCategory {
   name: string
   icon?: string
   fields: SystemField[]
+  /** Optional nested sub-categories for cascaded display (e.g. Category → Groups → Fields) */
+  subcategories?: SystemFieldCategory[]
 }
 
 export interface TemplateField {
@@ -625,4 +641,145 @@ export interface DragFieldData {
   systemFieldId?: string
   systemFieldName?: string
   systemFieldDescription?: string
+}
+
+// ============================================================================
+// Overlay Fields Response Types (Backend API format)
+// ============================================================================
+
+/**
+ * Raw overlay fields response from the backend.
+ * Structure: array of categories, each with groups of fields.
+ *
+ * Example:
+ * ```json
+ * [
+ *   {
+ *     "Category": "System",
+ *     "Groups": [
+ *       {
+ *         "Name": "Project",
+ *         "Fields": [
+ *           { "Name": "ProjectName", "FieldType": "text", "Description": "..." }
+ *         ]
+ *       }
+ *     ]
+ *   }
+ * ]
+ * ```
+ */
+export interface OverlayFieldsResponseItem {
+  Category: string
+  Groups: OverlayFieldGroup[]
+}
+
+export interface OverlayFieldGroup {
+  Name: string
+  Fields: OverlayFieldDefinition[]
+}
+
+export interface OverlayFieldDefinition {
+  Name: string
+  FieldType: string
+  Description?: string
+}
+
+export type OverlayFieldsResponse = OverlayFieldsResponseItem[]
+
+/**
+ * Maps a backend field type string to a TemplateFieldType.
+ * Unknown types default to 'text'.
+ */
+export function mapBackendFieldType(backendType: string): TemplateFieldType {
+  const normalized = backendType.toLowerCase().trim()
+  const mapping: Record<string, TemplateFieldType> = {
+    text: 'text',
+    string: 'text',
+    date: 'date',
+    datetime: 'date',
+    number: 'number',
+    currency: 'currency',
+    decimal: 'decimal',
+    float: 'decimal',
+    double: 'decimal',
+    integer: 'integer',
+    int: 'integer',
+    boolean: 'boolean',
+    bool: 'boolean',
+    checkbox: 'checkbox',
+    image: 'image',
+    signature: 'signature',
+    formula: 'formula',
+    dropdown: 'dropdown',
+    select: 'dropdown',
+  }
+  return mapping[normalized] || 'text'
+}
+
+/**
+ * Transforms the backend overlay fields response into SystemFieldCategory[].
+ *
+ * Each `Group` within a `Category` becomes a separate `SystemFieldCategory`,
+ * with the category name prepended as context (e.g. "System / Project").
+ *
+ * If `flattenGroups` is true, groups are flattened so each backend Category
+ * becomes one SystemFieldCategory with all fields merged.
+ */
+export function transformOverlayFields(
+  response: OverlayFieldsResponse,
+  options?: { flattenGroups?: boolean }
+): SystemFieldCategory[] {
+  const flatten = options?.flattenGroups ?? false
+  const categories: SystemFieldCategory[] = []
+
+  for (const item of response) {
+    if (flatten) {
+      // One SystemFieldCategory per backend Category
+      const allFields: SystemField[] = []
+      for (const group of item.Groups) {
+        for (const field of group.Fields) {
+          allFields.push({
+            name: field.Name,
+            fieldType: mapBackendFieldType(field.FieldType),
+            category: item.Category,
+            description: field.Description,
+          })
+        }
+      }
+      if (allFields.length > 0) {
+        categories.push({
+          name: item.Category,
+          icon: getCategoryIcon(item.Category),
+          fields: allFields,
+        })
+      }
+    } else {
+      // One SystemFieldCategory per Group
+      for (const group of item.Groups) {
+        const fields: SystemField[] = group.Fields.map(field => ({
+          name: field.Name,
+          fieldType: mapBackendFieldType(field.FieldType),
+          category: item.Category,
+          description: field.Description,
+        }))
+        if (fields.length > 0) {
+          categories.push({
+            name: `${item.Category} / ${group.Name}`,
+            icon: getCategoryIcon(item.Category),
+            fields,
+          })
+        }
+      }
+    }
+  }
+
+  return categories
+}
+
+function getCategoryIcon(category: string): string {
+  const lower = category.toLowerCase()
+  if (lower.includes('system')) return 'fas fa-cog'
+  if (lower.includes('question')) return 'fas fa-question-circle'
+  if (lower.includes('formula')) return 'fas fa-calculator'
+  return 'fas fa-folder'
 }

@@ -74,7 +74,10 @@ export function TemplateSidebar({
   const placedFieldIds = new Set(placedFields.map(f => f.systemFieldId).filter(Boolean))
 
   const hasSystemFields = systemFieldCategories.length > 0 &&
-    systemFieldCategories.some(cat => cat.fields.length > 0)
+    systemFieldCategories.some(cat =>
+      cat.fields.length > 0 ||
+      (cat.subcategories && cat.subcategories.some(sub => sub.fields.length > 0))
+    )
 
   const toggleCategory = (id: string) => {
     setExpandedCategories(prev => {
@@ -85,12 +88,33 @@ export function TemplateSidebar({
     })
   }
 
-  const filteredCategories = systemFieldCategories.map(cat => ({
-    ...cat,
-    fields: cat.fields.filter(f =>
-      f.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ),
-  })).filter(cat => cat.fields.length > 0 || !searchQuery)
+  const filterCategory = (cat: SystemFieldCategory): SystemFieldCategory => {
+    const q = searchQuery.toLowerCase()
+    const filteredFields = cat.fields.filter(f =>
+      f.name.toLowerCase().includes(q)
+    )
+    const filteredSubs = cat.subcategories
+      ?.map(sub => filterCategory(sub))
+      .filter(sub => sub.fields.length > 0 || (sub.subcategories && sub.subcategories.length > 0))
+    return { ...cat, fields: filteredFields, subcategories: filteredSubs }
+  }
+
+  const filteredCategories = systemFieldCategories
+    .map(cat => filterCategory(cat))
+    .filter(cat => {
+      if (!searchQuery) return true
+      return cat.fields.length > 0 || (cat.subcategories && cat.subcategories.length > 0)
+    })
+
+  const countAllFields = (cat: SystemFieldCategory): number => {
+    let count = cat.fields.length
+    if (cat.subcategories) {
+      for (const sub of cat.subcategories) {
+        count += countAllFields(sub)
+      }
+    }
+    return count
+  }
 
   return (
     <div style={{
@@ -138,7 +162,8 @@ export function TemplateSidebar({
             {filteredCategories.map(category => {
               const key = catKey(category)
               const isExpanded = expandedCategories.has(key)
-              const fieldCount = category.fields.length
+              const totalFields = countAllFields(category)
+              const hasSubcategories = category.subcategories && category.subcategories.length > 0
 
               return (
                 <div key={key}>
@@ -151,7 +176,7 @@ export function TemplateSidebar({
                         <i className={category.icon} style={styles.categoryIcon} />
                       )}
                       <span style={styles.categoryName}>{category.name}</span>
-                      <span style={styles.categoryCount}>{fieldCount}</span>
+                      <span style={styles.categoryCount}>{totalFields}</span>
                     </div>
                     <i
                       className={`fas fa-chevron-${isExpanded ? 'down' : 'right'}`}
@@ -160,6 +185,7 @@ export function TemplateSidebar({
                   </button>
                   {isExpanded && (
                     <div style={styles.categoryFields}>
+                      {/* Direct fields at this level */}
                       {category.fields.map(field => {
                         const fieldKey = field.id || field.name
                         return (
@@ -169,6 +195,45 @@ export function TemplateSidebar({
                             isPlaced={placedFieldIds.has(fieldKey)}
                             disabled={disabled}
                           />
+                        )
+                      })}
+                      {/* Nested subcategories */}
+                      {hasSubcategories && category.subcategories!.map(sub => {
+                        const subKey = `${key}/${catKey(sub)}`
+                        const isSubExpanded = expandedCategories.has(subKey)
+                        const subFieldCount = countAllFields(sub)
+
+                        return (
+                          <div key={subKey}>
+                            <button
+                              style={styles.subcategoryHeader}
+                              onClick={() => toggleCategory(subKey)}
+                            >
+                              <div style={styles.categoryLeft}>
+                                <span style={styles.subcategoryName}>{sub.name}</span>
+                                <span style={styles.subcategoryCount}>{subFieldCount}</span>
+                              </div>
+                              <i
+                                className={`fas fa-chevron-${isSubExpanded ? 'down' : 'right'}`}
+                                style={styles.categoryChevron}
+                              />
+                            </button>
+                            {isSubExpanded && (
+                              <div style={styles.subcategoryFields}>
+                                {sub.fields.map(field => {
+                                  const fieldKey = field.id || field.name
+                                  return (
+                                    <SystemFieldItem
+                                      key={fieldKey}
+                                      field={field}
+                                      isPlaced={placedFieldIds.has(fieldKey)}
+                                      disabled={disabled}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            )}
+                          </div>
                         )
                       })}
                     </div>
@@ -332,6 +397,35 @@ const styles: Record<string, React.CSSProperties> = {
   },
   categoryFields: {
     background: '#fafafa',
+  },
+  subcategoryHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: '7px 12px 7px 24px',
+    background: '#f5f5f5',
+    border: 'none',
+    borderBottom: '1px solid #ebebeb',
+    cursor: 'pointer',
+    fontSize: 12,
+    textAlign: 'left' as const,
+  },
+  subcategoryName: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#555',
+  },
+  subcategoryCount: {
+    fontSize: 10,
+    color: '#999',
+    background: '#e8e8e8',
+    padding: '1px 5px',
+    borderRadius: 8,
+  },
+  subcategoryFields: {
+    background: '#f0f0f0',
+    paddingLeft: 12,
   },
   customFieldsHint: {
     padding: '16px 12px',

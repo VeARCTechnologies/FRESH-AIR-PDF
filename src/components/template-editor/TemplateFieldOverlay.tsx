@@ -380,13 +380,15 @@ function InteractiveTemplateField({
         alignContent: 'center',
         opacity: 0.7,
       }}>
-        {field.defaultValue && field.fieldType !== 'checkbox' && (
+        {field.defaultValue && field.fieldType !== 'checkbox' && field.fieldType !== 'boolean' && (
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {field.fieldType === 'date' ? formatDateValue(field.defaultValue, field.dateFormat) : field.defaultValue}
           </span>
         )}
-        {field.fieldType === 'checkbox' && field.defaultValue === 'true' && (
-          <i className="fas fa-check" style={{ fontSize: 11, opacity: 0.8 }} />
+        {(field.fieldType === 'checkbox' || field.fieldType === 'boolean') && field.defaultValue === 'true' && (
+          <span style={{ fontSize: Math.max(11, (field.boxSize || 24) * scale * 0.5), opacity: 0.8, lineHeight: 1 }}>
+            {field.tickStyle === 'cross' ? '\u2717' : field.tickStyle === 'filled' ? '\u25A0' : '\u2713'}
+          </span>
         )}
       </div>
 
