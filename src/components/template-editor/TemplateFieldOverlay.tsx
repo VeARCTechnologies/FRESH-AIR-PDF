@@ -9,23 +9,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import type { TemplateField } from '@/types'
 import { TEMPLATE_FIELD_COLORS, TEMPLATE_FIELD_ICONS } from '@/types'
 
-/** Format a date default value according to the field's dateFormat */
-function formatDateValue(value: string, format?: string): string {
-  if (!value) return ''
-  // value is typically ISO: YYYY-MM-DD
-  const parts = value.split('-')
-  if (parts.length !== 3) return value
-  const [y, m, d] = parts
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  switch (format) {
-    case 'DD/MM/YYYY': return `${d}/${m}/${y}`
-    case 'MM-DD-YYYY': return `${m}-${d}-${y}`
-    case 'Month D YYYY': return `${months[parseInt(m, 10) - 1] || m} ${parseInt(d, 10)} ${y}`
-    case 'YYYY-MM-DD': return value
-    default: return `${d}/${m}/${y}`
-  }
-}
-
 // Inject hover styles once
 const styleEl = document.createElement('style')
 styleEl.id = 'template-field-overlay-styles'
@@ -380,16 +363,6 @@ function InteractiveTemplateField({
         alignContent: 'center',
         opacity: 0.7,
       }}>
-        {field.defaultValue && field.fieldType !== 'checkbox' && field.fieldType !== 'boolean' && (
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {field.fieldType === 'date' ? formatDateValue(field.defaultValue, field.dateFormat) : field.defaultValue}
-          </span>
-        )}
-        {(field.fieldType === 'checkbox' || field.fieldType === 'boolean') && field.defaultValue === 'true' && (
-          <span style={{ fontSize: Math.max(11, (field.boxSize || 24) * scale * 0.5), opacity: 0.8, lineHeight: 1 }}>
-            {field.tickStyle === 'cross' ? '\u2717' : field.tickStyle === 'filled' ? '\u25A0' : '\u2713'}
-          </span>
-        )}
       </div>
 
       {/* Resize tooltip */}

@@ -165,53 +165,6 @@ export function TemplateFieldPropertiesPanel({
           </div>
         </div>
 
-        {/* Default Value */}
-        <div style={styles.fieldGroup}>
-          <label style={styles.label}>DEFAULT VALUE</label>
-          {(field.fieldType === 'checkbox' || field.fieldType === 'boolean') ? (
-            <ToggleOption
-              label="Checked by default"
-              checked={field.defaultValue === 'true'}
-              onChange={(v) => onUpdate(field.id, { defaultValue: v ? 'true' : '' })}
-            />
-          ) : field.fieldType === 'date' ? (
-            <input
-              type="date"
-              value={field.defaultValue || ''}
-              onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
-              style={styles.fieldNameInput}
-            />
-          ) : (field.fieldType === 'number' || field.fieldType === 'currency' || field.fieldType === 'decimal' || field.fieldType === 'integer') ? (
-            <input
-              type="number"
-              step={field.fieldType === 'integer' ? '1' : 'any'}
-              value={field.defaultValue || ''}
-              onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
-              placeholder={`Enter default ${field.fieldType}`}
-              style={styles.fieldNameInput}
-            />
-          ) : (field.fieldType === 'signature' || field.fieldType === 'image') ? (
-            <span style={{ fontSize: 12, color: '#999', fontStyle: 'italic' }}>
-              Not applicable for {field.fieldType} fields
-            </span>
-          ) : field.fieldType === 'formula' ? (
-            <input
-              type="text"
-              value={field.defaultValue || ''}
-              onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
-              placeholder="Enter formula expression"
-              style={styles.fieldNameInput}
-            />
-          ) : (
-            <input
-              type="text"
-              value={field.defaultValue || ''}
-              onChange={(e) => onUpdate(field.id, { defaultValue: e.target.value })}
-              placeholder="Enter default value"
-              style={styles.fieldNameInput}
-            />
-          )}
-        </div>
 
         {/* Dropdown Options Manager */}
         {field.fieldType === 'dropdown' && (

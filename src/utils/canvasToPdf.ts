@@ -170,41 +170,6 @@ export function drawFieldsOnCanvas(
       ctx.fillText(field.name, x + 3, y - 4, w)
     }
 
-    // Draw default value inside (if any)
-    if (field.defaultValue) {
-      const isCheckType = field.fieldType === 'checkbox' || field.fieldType === 'boolean'
-      if (isCheckType && field.defaultValue === 'true') {
-        // Draw tick symbol centered in the field
-        const tickSize = Math.max(12, Math.min(h * 0.6, w * 0.6))
-        ctx.font = `400 ${tickSize}px "Segoe UI", -apple-system, sans-serif`
-        ctx.fillStyle = color
-        const tick = field.tickStyle === 'cross' ? '\u2717' : field.tickStyle === 'filled' ? '\u25A0' : '\u2713'
-        ctx.textAlign = 'center'
-        ctx.fillText(tick, x + w / 2, y + h / 2 + tickSize * 0.35)
-        ctx.textAlign = 'start'
-      } else if (!isCheckType) {
-        const valueFontSize = field.fontSize ? field.fontSize * scale : Math.max(9, h * 0.4)
-        ctx.font = `400 ${valueFontSize}px "Segoe UI", -apple-system, sans-serif`
-        ctx.fillStyle = '#333'
-        const displayVal = field.fieldType === 'date' ? formatDateDisplay(field.defaultValue, field.dateFormat) : field.defaultValue
-        ctx.fillText(displayVal, x + 4, y + h / 2 + labelFontSize * 0.3, w - 8)
-      }
-    }
-  }
-}
-
-/** Format ISO date (YYYY-MM-DD) according to a date format string. */
-function formatDateDisplay(value: string, format?: string): string {
-  const parts = value.split('-')
-  if (parts.length !== 3) return value
-  const [y, m, d] = parts
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
-  switch (format) {
-    case 'DD/MM/YYYY': return `${d}/${m}/${y}`
-    case 'MM-DD-YYYY': return `${m}-${d}-${y}`
-    case 'Month D YYYY': return `${months[parseInt(m, 10) - 1] || m} ${parseInt(d, 10)} ${y}`
-    case 'YYYY-MM-DD': return value
-    default: return `${d}/${m}/${y}`
   }
 }
 

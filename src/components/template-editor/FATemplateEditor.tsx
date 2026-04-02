@@ -37,8 +37,8 @@ import { TemplateUploadArea } from './TemplateUploadArea'
 import { ValidationBanner } from './ValidationBanner'
 import { ReadOnlyBanner } from './ReadOnlyBanner'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
-import { TEMPLATE_FIELD_COLORS } from '@/types'
-import { buildPdfFromPages, drawFieldsOnCanvas, downloadBlob } from '@/utils/canvasToPdf'
+import { downloadBlob } from '@/utils/canvasToPdf'
+import { buildFillablePdf } from '@/utils/fillablePdf'
 
 interface PageViewport {
   width: number
@@ -294,72 +294,22 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       })
     }, [onSave, template, state.fields, templateAPI])
 
-    // Download handler — renders preview PDF with fields baked onto pages
+    // Download handler — generates a fillable PDF with real AcroForm fields
     const handleDownload = useCallback(async () => {
-      const numPages = state.documentInfo?.numPages ?? 0
-      if (numPages === 0) return
+      if (!state.documentInfo) return
 
-      const pdfPages: { jpeg: ArrayBuffer; width: number; height: number }[] = []
+      const source = templateAPI.getDocumentSource()
+      if (!source) return
 
-      for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-        // Get page info for dimensions
-        const pageInfo = await engine.getPageInfo(pageNum)
-        const renderScale = 2 // render at 2x for quality
-        const pxWidth = pageInfo.width * renderScale
-        const pxHeight = pageInfo.height * renderScale
-
-        // Create offscreen canvas and render PDF page
-        const offscreen = document.createElement('canvas')
-        offscreen.width = pxWidth
-        offscreen.height = pxHeight
-        const fullViewport = {
-          width: pxWidth,
-          height: pxHeight,
-          scale: renderScale,
-          rotation: PageRotation.Rotate0,
-          offsetX: 0,
-          offsetY: 0,
-        }
-        await engine.renderPage(pageNum, offscreen, fullViewport)
-
-        // Draw field overlays onto the canvas
-        const ctx = offscreen.getContext('2d')
-        if (ctx) {
-          const pageFields = state.fields
-            .filter(f => f.pageNumber === pageNum)
-            .map(f => ({
-              name: f.systemFieldName || f.name,
-              bounds: f.bounds,
-              fieldType: f.fieldType,
-              defaultValue: f.defaultValue,
-              dateFormat: f.dateFormat,
-              borderVisible: f.borderVisible,
-              fontSize: f.fontSize,
-              multiline: f.multiline,
-              labelVisible: f.labelVisible,
-              tickStyle: f.tickStyle,
-              boxSize: f.boxSize,
-            }))
-          drawFieldsOnCanvas(ctx, pageFields, renderScale, TEMPLATE_FIELD_COLORS)
-        }
-
-        // Convert to JPEG
-        const blob = await new Promise<Blob>((resolve) => {
-          offscreen.toBlob((b) => resolve(b!), 'image/jpeg', 0.92)
-        })
-        const arrayBuf = await blob.arrayBuffer()
-
-        pdfPages.push({
-          jpeg: arrayBuf,
-          width: pageInfo.width, // PDF points (unscaled)
-          height: pageInfo.height,
-        })
+      try {
+        const pdfBytes = await buildFillablePdf(source, state.fields)
+        const blob = new Blob([pdfBytes as BlobPart], { type: 'application/pdf' })
+        const filename = (template?.name || 'template').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf'
+        downloadBlob(blob, filename)
+      } catch (err) {
+        console.error('Failed to generate fillable PDF:', err)
       }
-
-      const pdfBlob = buildPdfFromPages(pdfPages)
-      const filename = (template?.name || 'template').replace(/[^a-zA-Z0-9_-]/g, '_') + '_preview.pdf'
-      downloadBlob(pdfBlob, filename)
-    }, [state.documentInfo, state.fields, engine, template])
+    }, [state.documentInfo, state.fields, templateAPI, template])
 
     // Keyboard shortcuts
     useEffect(() => {

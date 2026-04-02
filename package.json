@@ -1,6 +1,6 @@
 {
   "name": "fresh-air-pdf",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Open-source PDF viewer React component with annotations, form fields, signatures, highlights, text markup, shapes, ink drawing, search, thumbnails, and full JSON import/export — powered by Mozilla PDF.js",
   "keywords": [
     "pdf",
@@ -91,6 +91,7 @@
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
+    "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.0.379"
   },
   "devDependencies": {
