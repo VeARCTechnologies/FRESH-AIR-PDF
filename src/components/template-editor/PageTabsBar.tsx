@@ -67,7 +67,10 @@ export function PageTabsBar({
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type === 'application/pdf') {
+    // Accept by MIME type OR .pdf extension — some browsers/OSes report an
+    // empty or non-standard type for a valid PDF.
+    const isPdf = !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name))
+    if (file && isPdf) {
       onAddPdfPage?.(file)
     }
     e.target.value = ''
