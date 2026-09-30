@@ -17,6 +17,7 @@ import type {
   AzureImportOptions,
 } from '@/types'
 import { convertAzureToFields } from '@/core/utils/azureImport'
+import { appendPdfPages } from '@/utils/mergePdf'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
 import { eventBus } from '@/core/events/EventBus'
 import { ViewerEvent } from '@/types'
@@ -192,6 +193,43 @@ export function useTemplateEditor(
     setCurrentPage(newPageNum)
   }, [numExtraPages])
 
+  // Append the pages of an uploaded PDF after the current document instead of
+  // replacing it. Any previously-added blank pages are baked into the merged
+  // document so they keep their page numbers (and any fields on them stay put).
+  const addPdfPages = useCallback(async (file: File) => {
+    const currentSource = documentSourceRef.current
+    const currentPdfPages = stateRef.current.documentInfo?.numPages ?? 0
+
+    // Nothing loaded yet — behave like an initial upload.
+    if (!currentSource || currentPdfPages === 0) {
+      return loadDocument(file)
+    }
+
+    setIsLoading(true)
+    isLoadingRef.current = true
+    setError(null)
+
+    try {
+      const mergedBytes = await appendPdfPages(currentSource, file, numExtraPages)
+      // First page contributed by the uploaded PDF (1-based) in the merged doc.
+      const firstNewPage = currentPdfPages + numExtraPages + 1
+      // appendPdfPages baked the blank pages into the merged document.
+      setNumExtraPages(0)
+      // loadDocument resets isLoading/currentPage; release our guard first so it
+      // does not short-circuit on the in-progress flag.
+      setIsLoading(false)
+      isLoadingRef.current = false
+      await loadDocument(mergedBytes)
+      setCurrentPage(firstNewPage)
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to add PDF pages')
+      setError(error)
+      setIsLoading(false)
+      isLoadingRef.current = false
+      throw error
+    }
+  }, [loadDocument, numExtraPages])
+
   // Field CRUD
   const addField = useCallback((field: Omit<TemplateField, 'id'>) => {
     pushHistory()
@@ -330,6 +368,7 @@ export function useTemplateEditor(
       deleteField,
       selectField,
       addBlankPage,
+      addPdfPages,
       setInteractionMode,
       undo,
       redo,

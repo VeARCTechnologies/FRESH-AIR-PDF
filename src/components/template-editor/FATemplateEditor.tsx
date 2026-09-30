@@ -350,10 +350,13 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       actions.selectField(null)
     }, [actions])
 
-    // Handle "Upload PDF" from Add Page menu — loads a new PDF document
+    // Handle "Upload PDF" from Add Page menu — appends the uploaded PDF's pages
+    // after the current document instead of replacing it.
     const handleAddPdfPage = useCallback((file: File) => {
-      templateAPI.loadDocument(file)
-    }, [templateAPI])
+      actions.addPdfPages(file).catch(err => {
+        console.error('Failed to add PDF pages:', err)
+      })
+    }, [actions])
 
     // Render pages
     const pdfPageCount = state.documentInfo?.numPages ?? 0
