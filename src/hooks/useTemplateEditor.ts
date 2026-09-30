@@ -17,10 +17,22 @@ import type {
   AzureImportOptions,
 } from '@/types'
 import { convertAzureToFields } from '@/core/utils/azureImport'
-import { appendPdfPages } from '@/utils/mergePdf'
+import { appendPdfPages, deletePageFromDocument } from '@/utils/mergePdf'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
 import { eventBus } from '@/core/events/EventBus'
 import { ViewerEvent } from '@/types'
+
+/**
+ * Drop fields on the deleted page and shift fields on later pages up by one.
+ */
+function remapFieldsAfterPageDelete(
+  fields: TemplateField[],
+  deletedPage: number,
+): TemplateField[] {
+  return fields
+    .filter(f => f.pageNumber !== deletedPage)
+    .map(f => (f.pageNumber > deletedPage ? { ...f, pageNumber: f.pageNumber - 1 } : f))
+}
 
 export function useTemplateEditor(
   initialFields: TemplateField[] = [],
@@ -230,6 +242,59 @@ export function useTemplateEditor(
     }
   }, [loadDocument, numExtraPages])
 
+  // Delete a single page (either a virtual blank page or a real PDF page).
+  // Fields on the deleted page are removed and later fields shift up by one.
+  const deletePage = useCallback(async (pageNumber: number) => {
+    const pdfCount = stateRef.current.documentInfo?.numPages ?? 0
+    const total = pdfCount + numExtraPages
+    if (total <= 1) return // always keep at least one page
+    if (pageNumber < 1 || pageNumber > total) return
+
+    const newTotal = total - 1
+    // A page structure change invalidates field-only undo snapshots, so reset
+    // history to avoid restoring fields onto pages that no longer line up.
+    const resetHistory = () => {
+      undoStackRef.current = []
+      redoStackRef.current = []
+      syncUndoRedoState()
+    }
+
+    // Virtual blank page — no source change or reload needed.
+    if (pageNumber > pdfCount) {
+      setFieldsState(prev => remapFieldsAfterPageDelete(prev, pageNumber))
+      setNumExtraPages(prev => Math.max(0, prev - 1))
+      setCurrentPage(prev => Math.min(prev, newTotal))
+      resetHistory()
+      return
+    }
+
+    // Real PDF page — rebuild the document without it and reload.
+    const source = documentSourceRef.current
+    if (!source) return
+
+    setIsLoading(true)
+    isLoadingRef.current = true
+    setError(null)
+
+    try {
+      const newBytes = await deletePageFromDocument(source, pageNumber, numExtraPages)
+      setFieldsState(prev => remapFieldsAfterPageDelete(prev, pageNumber))
+      // Blank pages were baked into the rebuilt document.
+      setNumExtraPages(0)
+      setIsLoading(false)
+      isLoadingRef.current = false
+      await loadDocument(newBytes)
+      setCurrentPage(Math.min(pageNumber, newTotal))
+      resetHistory()
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Failed to delete page')
+      setError(error)
+      setIsLoading(false)
+      isLoadingRef.current = false
+      throw error
+    }
+  }, [loadDocument, numExtraPages, syncUndoRedoState])
+
   // Field CRUD
   const addField = useCallback((field: Omit<TemplateField, 'id'>) => {
     pushHistory()
@@ -369,6 +434,7 @@ export function useTemplateEditor(
       selectField,
       addBlankPage,
       addPdfPages,
+      deletePage,
       setInteractionMode,
       undo,
       redo,

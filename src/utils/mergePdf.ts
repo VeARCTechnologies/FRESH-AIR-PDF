@@ -61,3 +61,40 @@ export async function appendPdfPages(
 
   return mergedDoc.save()
 }
+
+/**
+ * Remove a single page from a document, returning the new PDF bytes.
+ *
+ * The base document's pages plus `blankPageCount` materialized blank pages form
+ * the effective page set; the page at `pageNumber` (1-based) is then removed.
+ * The result always has at least one page — callers must guard against deleting
+ * the final remaining page.
+ *
+ * @param source          The current document (URL, Blob, ArrayBuffer, or Uint8Array)
+ * @param pageNumber      1-based page number to remove
+ * @param blankPageCount  Number of virtual blank pages to bake in before removal
+ * @returns               Uint8Array of the document without the removed page
+ */
+export async function deletePageFromDocument(
+  source: DocumentSource,
+  pageNumber: number,
+  blankPageCount = 0,
+): Promise<Uint8Array> {
+  const bytes = await sourceToBytes(source)
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+
+  for (let i = 0; i < blankPageCount; i++) {
+    doc.addPage([BLANK_PAGE_WIDTH, BLANK_PAGE_HEIGHT])
+  }
+
+  const index = pageNumber - 1
+  if (index < 0 || index >= doc.getPageCount()) {
+    throw new Error(`Cannot delete page ${pageNumber}: out of range`)
+  }
+  if (doc.getPageCount() <= 1) {
+    throw new Error('Cannot delete the last remaining page')
+  }
+
+  doc.removePage(index)
+  return doc.save()
+}

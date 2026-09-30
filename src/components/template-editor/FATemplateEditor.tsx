@@ -358,6 +358,13 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       })
     }, [actions])
 
+    // Handle deleting a page from the page tabs bar.
+    const handleDeletePage = useCallback((pageNumber: number) => {
+      actions.deletePage(pageNumber).catch(err => {
+        console.error('Failed to delete page:', err)
+      })
+    }, [actions])
+
     // Render pages
     const pdfPageCount = state.documentInfo?.numPages ?? 0
     const renderPages = () => {
@@ -487,6 +494,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
             onPageChange={navigateToPage}
             onAddBlankPage={actions.addBlankPage}
             onAddPdfPage={handleAddPdfPage}
+            onDeletePage={handleDeletePage}
             readOnly={readOnly}
             isMobile={isMobile}
           />
