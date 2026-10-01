@@ -114,7 +114,6 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
 
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [dismissedValidation, setDismissedValidation] = useState(false)
-    const [showMobileSidebar, setShowMobileSidebar] = useState(false)
 
     const { isMobile } = useResponsive(containerRef)
     const readOnly = config.readOnly || false
@@ -134,7 +133,6 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
         requiredAtGeneration: false,
         multiline: false,
       })
-      setShowMobileSidebar(false)
     }, [actions])
 
     // Compute PDF page dimensions (unscaled) for accurate drop coordinate conversion
@@ -502,52 +500,16 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
 
         {/* Main Content */}
         <div style={editorStyles.content}>
-          {/* Left Sidebar — inline on desktop, slide-over on mobile */}
-          {!readOnly && !isMobile && (
+          {/* Left Sidebar — always inline (compact on small viewports / high zoom)
+              so drag-and-drop keeps working at any size instead of hiding behind
+              a modal slide-over. */}
+          {!readOnly && (
             <TemplateSidebar
               systemFieldCategories={normalizedCategories}
               placedFields={state.fields}
               disabled={!state.documentInfo}
+              isMobile={isMobile}
             />
-          )}
-
-          {/* Mobile sidebar toggle button */}
-          {!readOnly && isMobile && (
-            <button
-              style={editorStyles.mobileSidebarToggle}
-              onClick={() => setShowMobileSidebar(true)}
-              title="Open field panel"
-            >
-              <i className="fas fa-th-large" style={{ fontSize: 14 }} />
-            </button>
-          )}
-
-          {/* Mobile sidebar overlay */}
-          {!readOnly && isMobile && showMobileSidebar && (
-            <div style={editorStyles.mobileOverlayBackdrop} onClick={() => setShowMobileSidebar(false)}>
-              <div
-                style={editorStyles.mobileSidebarPanel}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div style={editorStyles.mobileSidebarHeader}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>Fields</span>
-                  <button
-                    style={editorStyles.mobileSidebarClose}
-                    onClick={() => setShowMobileSidebar(false)}
-                  >
-                    <i className="fas fa-times" />
-                  </button>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                  <TemplateSidebar
-                    systemFieldCategories={normalizedCategories}
-                    placedFields={state.fields}
-                    disabled={!state.documentInfo}
-                    isMobile
-                  />
-                </div>
-              </div>
-            </div>
           )}
 
           {/* Document Area */}
@@ -930,6 +892,7 @@ const editorStyles: Record<string, React.CSSProperties> = {
   },
   documentArea: {
     flex: 1,
+    minWidth: 0,
     overflow: 'auto',
     background: '#e8e8e8',
     display: 'flex',
