@@ -13,6 +13,7 @@ interface PageTabsBarProps {
   onPageChange: (page: number) => void
   onAddBlankPage?: () => void
   onAddPdfPage?: (file: File) => void
+  onDeletePage?: (page: number) => void
   readOnly?: boolean
   isMobile?: boolean
 }
@@ -23,6 +24,7 @@ export function PageTabsBar({
   onPageChange,
   onAddBlankPage,
   onAddPdfPage,
+  onDeletePage,
   readOnly = false,
   isMobile = false,
 }: PageTabsBarProps) {
@@ -30,8 +32,11 @@ export function PageTabsBar({
   const needsScroll = numPages > MAX_VISIBLE
   const [scrollOffset, setScrollOffset] = useState(0)
   const [showAddMenu, setShowAddMenu] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const addMenuRef = useRef<HTMLDivElement>(null)
   const addButtonRef = useRef<HTMLButtonElement>(null)
+  const deleteMenuRef = useRef<HTMLDivElement>(null)
+  const deleteButtonRef = useRef<HTMLButtonElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Clamp scrollOffset when numPages changes
@@ -65,9 +70,30 @@ export function PageTabsBar({
     return () => window.removeEventListener('mousedown', handleClick)
   }, [showAddMenu])
 
+  // Close delete confirm on outside click
+  useEffect(() => {
+    if (!showDeleteConfirm) return
+    const handleClick = (e: MouseEvent) => {
+      if (deleteMenuRef.current && !deleteMenuRef.current.contains(e.target as Node) &&
+          deleteButtonRef.current && !deleteButtonRef.current.contains(e.target as Node)) {
+        setShowDeleteConfirm(false)
+      }
+    }
+    window.addEventListener('mousedown', handleClick)
+    return () => window.removeEventListener('mousedown', handleClick)
+  }, [showDeleteConfirm])
+
+  // Close the confirm popover if the page set shrinks to a single page.
+  useEffect(() => {
+    if (numPages <= 1 && showDeleteConfirm) setShowDeleteConfirm(false)
+  }, [numPages, showDeleteConfirm])
+
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type === 'application/pdf') {
+    // Accept by MIME type OR .pdf extension — some browsers/OSes report an
+    // empty or non-standard type for a valid PDF.
+    const isPdf = !!file && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name))
+    if (file && isPdf) {
       onAddPdfPage?.(file)
     }
     e.target.value = ''
@@ -160,6 +186,48 @@ export function PageTabsBar({
                 style={{ display: 'none' }}
                 onChange={handleFileUpload}
               />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Delete Page button */}
+      {!readOnly && onDeletePage && (
+        <div style={{ position: 'relative' }}>
+          <button
+            ref={deleteButtonRef}
+            style={{
+              ...styles.deletePageButton,
+              ...(isMobile ? { padding: '4px 8px', fontSize: 11 } : {}),
+              ...(numPages <= 1 ? styles.deletePageButtonDisabled : {}),
+            }}
+            onClick={() => { if (numPages > 1) setShowDeleteConfirm(v => !v) }}
+            disabled={numPages <= 1}
+            title={numPages <= 1 ? 'Cannot delete the only page' : `Delete page ${currentPage}`}
+          >
+            <i className="fas fa-trash-alt" style={{ marginRight: isMobile ? 0 : 4, fontSize: 10 }} />
+            {!isMobile && 'Delete Page'}
+          </button>
+
+          {showDeleteConfirm && (
+            <div ref={deleteMenuRef} style={styles.deleteMenu}>
+              <div style={styles.deleteMenuText}>
+                Delete page {currentPage}? Any fields on it will be removed.
+              </div>
+              <div style={styles.deleteMenuActions}>
+                <button
+                  style={styles.deleteCancelButton}
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  style={styles.deleteConfirmButton}
+                  onClick={() => { onDeletePage?.(currentPage); setShowDeleteConfirm(false) }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -257,5 +325,65 @@ const styles: Record<string, React.CSSProperties> = {
     marginRight: 8,
     color: '#888',
     fontSize: 12,
+  },
+  deletePageButton: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '4px 10px',
+    background: 'transparent',
+    border: '1px solid #e0e0e0',
+    borderRadius: 4,
+    color: '#c62828',
+    fontSize: 12,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
+  },
+  deletePageButtonDisabled: {
+    color: '#bbb',
+    cursor: 'not-allowed',
+    opacity: 0.6,
+  },
+  deleteMenu: {
+    position: 'absolute' as const,
+    top: '100%',
+    right: 0,
+    marginTop: 4,
+    background: '#ffffff',
+    border: '1px solid #e0e0e0',
+    borderRadius: 6,
+    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+    zIndex: 200,
+    width: 220,
+    padding: 12,
+  },
+  deleteMenuText: {
+    fontSize: 12,
+    color: '#333',
+    marginBottom: 10,
+    lineHeight: 1.4,
+  },
+  deleteMenuActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  deleteCancelButton: {
+    padding: '5px 12px',
+    background: 'transparent',
+    border: '1px solid #e0e0e0',
+    borderRadius: 4,
+    color: '#555',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+  deleteConfirmButton: {
+    padding: '5px 12px',
+    background: '#c62828',
+    border: 'none',
+    borderRadius: 4,
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
   },
 }

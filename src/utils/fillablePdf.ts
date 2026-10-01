@@ -11,21 +11,7 @@ import {
 } from 'pdf-lib'
 import type { TemplateField, DocumentSource } from '@/types'
 import { TEMPLATE_FIELD_COLORS } from '@/types'
-
-/**
- * Convert a DocumentSource to Uint8Array for pdf-lib consumption.
- */
-async function sourceToBytes(source: DocumentSource): Promise<Uint8Array> {
-  if (source instanceof Uint8Array) return source
-  if (source instanceof ArrayBuffer) return new Uint8Array(source)
-  if (source instanceof Blob) return new Uint8Array(await source.arrayBuffer())
-  if (typeof source === 'string') {
-    const response = await fetch(source)
-    const buffer = await response.arrayBuffer()
-    return new Uint8Array(buffer)
-  }
-  throw new Error('Unsupported document source type')
-}
+import { sourceToBytes } from './mergePdf'
 
 /** Map our dateFormat to Acrobat's AFDate format string. */
 function toAcrobatDateFormat(fmt?: string): string {

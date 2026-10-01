@@ -84,9 +84,12 @@ export class PDFDocumentEngine {
       const arrayBuffer = await source.arrayBuffer()
       documentSource = { data: new Uint8Array(arrayBuffer) }
     } else if (source instanceof ArrayBuffer) {
-      documentSource = { data: new Uint8Array(source) }
+      // Copy so PDF.js's transfer/detach doesn't neuter the caller's buffer,
+      // which would break later reuse of the same source (merge, download).
+      documentSource = { data: new Uint8Array(source.slice(0)) }
     } else {
-      documentSource = { data: source }
+      // Uint8Array — copy for the same reason (new Uint8Array(view) clones bytes).
+      documentSource = { data: new Uint8Array(source) }
     }
 
     try {
