@@ -61,6 +61,13 @@ export function TemplateSidebar({
   }, [])
 
   const [searchQuery, setSearchQuery] = useState('')
+  // Field Types is secondary to the Overlay Fields list. Collapse it by default
+  // on short viewports (e.g. 1080p at 150% Windows scaling ≈ 720px tall) so the
+  // overlay fields list gets the vertical space. Still user-togglable.
+  const [fieldTypesOpen, setFieldTypesOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') return window.innerHeight >= 760
+    return true
+  })
   const catKey = (cat: { id?: string; name: string }) => cat.id || cat.name
 
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
@@ -124,18 +131,29 @@ export function TemplateSidebar({
         : { width: sidebarWidth, minWidth: sidebarWidth }
       ),
     }}>
-      {/* Field Types Section */}
+      {/* Field Types Section — collapsible to free vertical space for overlay fields */}
       <div style={styles.section}>
-        <div style={styles.sectionHeader}>FIELD TYPES</div>
-        <div style={styles.sectionSubtext}>Drag a field type onto the canvas</div>
-        <div style={styles.fieldTypeGrid}>
-          <FieldTypeButton fieldType="text" label="Text" icon="fas fa-font" disabled={disabled} />
-          <FieldTypeButton fieldType="date" label="Date" icon="fas fa-calendar-alt" disabled={disabled} />
-          <FieldTypeButton fieldType="number" label="Number" icon="fas fa-hashtag" disabled={disabled} />
-          <FieldTypeButton fieldType="checkbox" label="Checkbox" icon="fas fa-check-square" disabled={disabled} />
-          <FieldTypeButton fieldType="signature" label="Signature" icon="fas fa-signature" disabled={disabled} />
-          <FieldTypeButton fieldType="dropdown" label="Dropdown" icon="fas fa-list" disabled={disabled} />
-        </div>
+        <button
+          style={styles.sectionToggle}
+          onClick={() => setFieldTypesOpen(o => !o)}
+          title={fieldTypesOpen ? 'Collapse field types' : 'Expand field types'}
+        >
+          <span style={styles.sectionHeaderInline}>FIELD TYPES</span>
+          <i
+            className={`fas fa-chevron-${fieldTypesOpen ? 'down' : 'right'}`}
+            style={styles.sectionChevron}
+          />
+        </button>
+        {fieldTypesOpen && (
+          <div style={styles.fieldTypeGrid}>
+            <FieldTypeButton fieldType="text" label="Text" icon="fas fa-font" disabled={disabled} />
+            <FieldTypeButton fieldType="date" label="Date" icon="fas fa-calendar-alt" disabled={disabled} />
+            <FieldTypeButton fieldType="number" label="Number" icon="fas fa-hashtag" disabled={disabled} />
+            <FieldTypeButton fieldType="checkbox" label="Checkbox" icon="fas fa-check-square" disabled={disabled} />
+            <FieldTypeButton fieldType="signature" label="Signature" icon="fas fa-signature" disabled={disabled} />
+            <FieldTypeButton fieldType="dropdown" label="Dropdown" icon="fas fa-list" disabled={disabled} />
+          </div>
+        )}
       </div>
 
       {/* Overlay Fields Section — only when system fields are provided */}
@@ -143,7 +161,6 @@ export function TemplateSidebar({
         <>
           <div style={styles.section}>
             <div style={styles.sectionHeader}>OVERLAY FIELDS</div>
-            <div style={styles.sectionSubtext}>Drag a mapped field onto the canvas</div>
 
             <div style={styles.searchContainer}>
               <i className="fas fa-search" style={styles.searchIcon} />
@@ -317,7 +334,29 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#666',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: 8,
+  },
+  sectionToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    padding: 0,
+    marginBottom: 8,
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+  },
+  sectionHeaderInline: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#666',
+    letterSpacing: 0.5,
+  },
+  sectionChevron: {
+    fontSize: 9,
+    color: '#999',
   },
   sectionSubtext: {
     fontSize: 11,
@@ -355,6 +394,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   categoriesList: {
     flex: 1,
+    minHeight: 0,
     overflowY: 'auto' as const,
   },
   categoryHeader: {
