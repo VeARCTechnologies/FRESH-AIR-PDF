@@ -26,6 +26,9 @@ export function TemplateSidebar({
 }: TemplateSidebarProps) {
   const MIN_WIDTH = 270
   const MAX_WIDTH = 450
+  // Narrow inline width used on small viewports / high zoom, so the fields panel
+  // stays inline (and drag-and-drop keeps working) instead of becoming a modal.
+  const COMPACT_WIDTH = 190
   const [sidebarWidth, setSidebarWidth] = useState(MIN_WIDTH)
   const isResizing = useRef(false)
   const startX = useRef(0)
@@ -120,14 +123,13 @@ export function TemplateSidebar({
     <div style={{
       ...styles.sidebar,
       ...(isMobile
-        ? { width: '100%', minWidth: 'unset', borderRight: 'none', height: 'auto', maxHeight: '100%' }
+        ? { width: COMPACT_WIDTH, minWidth: COMPACT_WIDTH }
         : { width: sidebarWidth, minWidth: sidebarWidth }
       ),
     }}>
       {/* Field Types Section */}
       <div style={styles.section}>
         <div style={styles.sectionHeader}>FIELD TYPES</div>
-        <div style={styles.sectionSubtext}>Drag a field type onto the canvas</div>
         <div style={styles.fieldTypeGrid}>
           <FieldTypeButton fieldType="text" label="Text" icon="fas fa-font" disabled={disabled} />
           <FieldTypeButton fieldType="date" label="Date" icon="fas fa-calendar-alt" disabled={disabled} />
@@ -143,7 +145,6 @@ export function TemplateSidebar({
         <>
           <div style={styles.section}>
             <div style={styles.sectionHeader}>OVERLAY FIELDS</div>
-            <div style={styles.sectionSubtext}>Drag a mapped field onto the canvas</div>
 
             <div style={styles.searchContainer}>
               <i className="fas fa-search" style={styles.searchIcon} />
@@ -317,7 +318,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: '#666',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: 8,
   },
   sectionSubtext: {
     fontSize: 11,
@@ -355,6 +356,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   categoriesList: {
     flex: 1,
+    minHeight: 0,
     overflowY: 'auto' as const,
   },
   categoryHeader: {

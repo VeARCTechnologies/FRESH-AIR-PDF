@@ -114,7 +114,6 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
 
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [dismissedValidation, setDismissedValidation] = useState(false)
-    const [showMobileSidebar, setShowMobileSidebar] = useState(false)
 
     const { isMobile } = useResponsive(containerRef)
     const readOnly = config.readOnly || false
@@ -134,7 +133,6 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
         requiredAtGeneration: false,
         multiline: false,
       })
-      setShowMobileSidebar(false)
     }, [actions])
 
     // Compute PDF page dimensions (unscaled) for accurate drop coordinate conversion
@@ -180,8 +178,11 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
     }, [state.fields, onFieldsChange])
 
     // Navigate to page and scroll — wraps actions.goToPage with scroll lock
+    // Set to true by the scroll handler so the scroll-sync effect below can tell
+    // a user-driven page change (don't auto-scroll) from a programmatic one.
+    const isScrollDrivenChange = useRef(false)
+
     const navigateToPage = useCallback((pageNumber: number) => {
-      isScrollingToPage.current = true
       actions.goToPage(pageNumber)
     }, [actions])
 
@@ -205,6 +206,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       })
 
       if (closestPage !== state.currentPage) {
+        isScrollDrivenChange.current = true
         actions.goToPage(closestPage)
       }
     }, [state.currentPage, actions])
@@ -227,11 +229,15 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       }
     }, [handleScroll])
 
-    // Scroll to page when tab clicked
-    const lastScrolledPage = useRef(state.currentPage)
+    // Scroll the viewport to the current page for programmatic page changes
+    // (tab click, jump, prev/next, add/delete). Skip when the change was driven
+    // by the user scrolling — otherwise we'd fight their scroll and flicker to
+    // the wrong page.
     useEffect(() => {
-      if (lastScrolledPage.current === state.currentPage) return
-      lastScrolledPage.current = state.currentPage
+      if (isScrollDrivenChange.current) {
+        isScrollDrivenChange.current = false
+        return
+      }
       const el = pageRefs.current.get(state.currentPage)
       if (!el) return
       isScrollingToPage.current = true
@@ -302,14 +308,16 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       if (!source) return
 
       try {
-        const pdfBytes = await buildFillablePdf(source, state.fields)
+        // Include any virtual blank pages so the download matches the editor.
+        const blankPageCount = Math.max(0, state.totalPages - (state.documentInfo.numPages ?? 0))
+        const pdfBytes = await buildFillablePdf(source, state.fields, blankPageCount)
         const blob = new Blob([pdfBytes as BlobPart], { type: 'application/pdf' })
         const filename = (template?.name || 'template').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf'
         downloadBlob(blob, filename)
       } catch (err) {
         console.error('Failed to generate fillable PDF:', err)
       }
-    }, [state.documentInfo, state.fields, templateAPI, template])
+    }, [state.documentInfo, state.totalPages, state.fields, templateAPI, template])
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -502,52 +510,16 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
 
         {/* Main Content */}
         <div style={editorStyles.content}>
-          {/* Left Sidebar — inline on desktop, slide-over on mobile */}
-          {!readOnly && !isMobile && (
+          {/* Left Sidebar — always inline (compact on small viewports / high zoom)
+              so drag-and-drop keeps working at any size instead of hiding behind
+              a modal slide-over. */}
+          {!readOnly && (
             <TemplateSidebar
               systemFieldCategories={normalizedCategories}
               placedFields={state.fields}
               disabled={!state.documentInfo}
+              isMobile={isMobile}
             />
-          )}
-
-          {/* Mobile sidebar toggle button */}
-          {!readOnly && isMobile && (
-            <button
-              style={editorStyles.mobileSidebarToggle}
-              onClick={() => setShowMobileSidebar(true)}
-              title="Open field panel"
-            >
-              <i className="fas fa-th-large" style={{ fontSize: 14 }} />
-            </button>
-          )}
-
-          {/* Mobile sidebar overlay */}
-          {!readOnly && isMobile && showMobileSidebar && (
-            <div style={editorStyles.mobileOverlayBackdrop} onClick={() => setShowMobileSidebar(false)}>
-              <div
-                style={editorStyles.mobileSidebarPanel}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div style={editorStyles.mobileSidebarHeader}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>Fields</span>
-                  <button
-                    style={editorStyles.mobileSidebarClose}
-                    onClick={() => setShowMobileSidebar(false)}
-                  >
-                    <i className="fas fa-times" />
-                  </button>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                  <TemplateSidebar
-                    systemFieldCategories={normalizedCategories}
-                    placedFields={state.fields}
-                    disabled={!state.documentInfo}
-                    isMobile
-                  />
-                </div>
-              </div>
-            </div>
           )}
 
           {/* Document Area */}
@@ -930,6 +902,7 @@ const editorStyles: Record<string, React.CSSProperties> = {
   },
   documentArea: {
     flex: 1,
+    minWidth: 0,
     overflow: 'auto',
     background: '#e8e8e8',
     display: 'flex',
