@@ -178,8 +178,11 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
     }, [state.fields, onFieldsChange])
 
     // Navigate to page and scroll — wraps actions.goToPage with scroll lock
+    // Set to true by the scroll handler so the scroll-sync effect below can tell
+    // a user-driven page change (don't auto-scroll) from a programmatic one.
+    const isScrollDrivenChange = useRef(false)
+
     const navigateToPage = useCallback((pageNumber: number) => {
-      isScrollingToPage.current = true
       actions.goToPage(pageNumber)
     }, [actions])
 
@@ -203,6 +206,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       })
 
       if (closestPage !== state.currentPage) {
+        isScrollDrivenChange.current = true
         actions.goToPage(closestPage)
       }
     }, [state.currentPage, actions])
@@ -225,11 +229,15 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       }
     }, [handleScroll])
 
-    // Scroll to page when tab clicked
-    const lastScrolledPage = useRef(state.currentPage)
+    // Scroll the viewport to the current page for programmatic page changes
+    // (tab click, jump, prev/next, add/delete). Skip when the change was driven
+    // by the user scrolling — otherwise we'd fight their scroll and flicker to
+    // the wrong page.
     useEffect(() => {
-      if (lastScrolledPage.current === state.currentPage) return
-      lastScrolledPage.current = state.currentPage
+      if (isScrollDrivenChange.current) {
+        isScrollDrivenChange.current = false
+        return
+      }
       const el = pageRefs.current.get(state.currentPage)
       if (!el) return
       isScrollingToPage.current = true
@@ -300,14 +308,16 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       if (!source) return
 
       try {
-        const pdfBytes = await buildFillablePdf(source, state.fields)
+        // Include any virtual blank pages so the download matches the editor.
+        const blankPageCount = Math.max(0, state.totalPages - (state.documentInfo.numPages ?? 0))
+        const pdfBytes = await buildFillablePdf(source, state.fields, blankPageCount)
         const blob = new Blob([pdfBytes as BlobPart], { type: 'application/pdf' })
         const filename = (template?.name || 'template').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf'
         downloadBlob(blob, filename)
       } catch (err) {
         console.error('Failed to generate fillable PDF:', err)
       }
-    }, [state.documentInfo, state.fields, templateAPI, template])
+    }, [state.documentInfo, state.totalPages, state.fields, templateAPI, template])
 
     // Keyboard shortcuts
     useEffect(() => {

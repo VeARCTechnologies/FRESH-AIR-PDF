@@ -47,9 +47,18 @@ function hexToRgb(hex: string) {
 export async function buildFillablePdf(
   source: DocumentSource,
   fields: TemplateField[],
+  blankPageCount = 0,
 ): Promise<Uint8Array> {
   const bytes = await sourceToBytes(source)
   const pdfDoc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+
+  // Materialize any virtual blank pages (added via "Add Page -> Blank page")
+  // after the source pages so they appear in the downloaded PDF and any fields
+  // placed on them line up. US Letter — matches BlankPageCanvas in the editor.
+  for (let i = 0; i < blankPageCount; i++) {
+    pdfDoc.addPage([612, 792])
+  }
+
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
   const form = pdfDoc.getForm()
   const pages = pdfDoc.getPages()
