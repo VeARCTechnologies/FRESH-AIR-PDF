@@ -63,6 +63,30 @@ export async function appendPdfPages(
 }
 
 /**
+ * Return the document as PDF bytes with `blankPageCount` blank pages appended.
+ *
+ * Used when saving: virtual blank pages (added via "Add Page -> Blank page")
+ * are not baked into the live document source, so they must be materialized so
+ * the full, current document is handed back to the consumer.
+ *
+ * @param source          The current document (URL, Blob, ArrayBuffer, or Uint8Array)
+ * @param blankPageCount  Number of blank pages to append
+ * @returns               Uint8Array of the document including the blank pages
+ */
+export async function materializeBlankPages(
+  source: DocumentSource,
+  blankPageCount: number,
+): Promise<Uint8Array> {
+  const bytes = await sourceToBytes(source)
+  if (blankPageCount <= 0) return bytes
+  const doc = await PDFDocument.load(bytes, { ignoreEncryption: true })
+  for (let i = 0; i < blankPageCount; i++) {
+    doc.addPage([BLANK_PAGE_WIDTH, BLANK_PAGE_HEIGHT])
+  }
+  return doc.save()
+}
+
+/**
  * Remove a single page from a document, returning the new PDF bytes.
  *
  * The base document's pages plus `blankPageCount` materialized blank pages form

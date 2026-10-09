@@ -39,6 +39,7 @@ import { ReadOnlyBanner } from './ReadOnlyBanner'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
 import { downloadBlob } from '@/utils/canvasToPdf'
 import { buildFillablePdf } from '@/utils/fillablePdf'
+import { materializeBlankPages } from '@/utils/mergePdf'
 
 interface PageViewport {
   width: number
@@ -289,16 +290,30 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       templateAPI.loadDocument(file)
     }, [templateAPI])
 
-    // Save handler — also calls onSave callback for parent integration
-    const handleSave = useCallback(() => {
+    // Save handler — also calls onSave callback for parent integration.
+    // Hand back the FULL current document as a Blob so every edit type (uploaded
+    // pages, deleted pages, and virtual blank pages) reaches the consumer. A Blob
+    // is used because consumers commonly persist the PDF only when it's a Blob.
+    const handleSave = useCallback(async () => {
       if (!onSave || !template) return
+      const source = templateAPI.getDocumentSource()
+      let documentSource = source ?? undefined
+      if (source) {
+        try {
+          const blankPageCount = Math.max(0, state.totalPages - (state.documentInfo?.numPages ?? 0))
+          const bytes = await materializeBlankPages(source, blankPageCount)
+          documentSource = new Blob([bytes as BlobPart], { type: 'application/pdf' })
+        } catch (err) {
+          console.error('Failed to prepare document for save:', err)
+        }
+      }
       onSave({
         template,
         fields: state.fields,
         exportJson: templateAPI.exportTemplate(template),
-        documentSource: templateAPI.getDocumentSource() ?? undefined,
+        documentSource,
       })
-    }, [onSave, template, state.fields, templateAPI])
+    }, [onSave, template, state.fields, state.totalPages, state.documentInfo, templateAPI])
 
     // Download handler — generates a fillable PDF with real AcroForm fields
     const handleDownload = useCallback(async () => {
