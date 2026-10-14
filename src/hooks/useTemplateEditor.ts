@@ -299,6 +299,21 @@ export function useTemplateEditor(
     }
   }, [loadDocument, numExtraPages, syncUndoRedoState])
 
+  // Replace the loaded PDF with a different document. Existing overlay fields
+  // and virtual blank pages belong to the previous PDF — they may not line up
+  // with (or mean anything in) the new one — so clear them. Use this for the
+  // "upload / replace PDF" action; use loadDocument for the initial document
+  // and for internal reloads (delete/append) that intentionally keep fields.
+  const replaceDocument = useCallback(async (source: DocumentSource) => {
+    setFieldsState([])
+    setSelectedFieldId(null)
+    setNumExtraPages(0)
+    undoStackRef.current = []
+    redoStackRef.current = []
+    syncUndoRedoState()
+    await loadDocument(source)
+  }, [loadDocument, syncUndoRedoState])
+
   // Field CRUD
   const addField = useCallback((field: Omit<TemplateField, 'id'>) => {
     pushHistory()
@@ -392,6 +407,7 @@ export function useTemplateEditor(
   // API
   const templateAPI: TemplateEditorAPI = useMemo(() => ({
     loadDocument,
+    replaceDocument,
     getDocumentSource: () => documentSourceRef.current,
     getUpdatedDocument: async () => {
       const source = documentSourceRef.current
@@ -408,7 +424,7 @@ export function useTemplateEditor(
     exportTemplate: (template?: TemplateInfo) => exportTemplate(template),
     importTemplate: (input: string | TemplateExportData) => importTemplate(input),
     importFromAzure: (response: AzureAnalyzeResponse, options?: AzureImportOptions) => importFromAzure(response, options),
-  }), [loadDocument, goToPage, setZoom, exportTemplate, importTemplate, importFromAzure, pushHistory])
+  }), [loadDocument, replaceDocument, goToPage, setZoom, exportTemplate, importTemplate, importFromAzure, pushHistory])
 
   return {
     templateAPI,
@@ -434,6 +450,7 @@ export function useTemplateEditor(
     },
     actions: {
       loadDocument,
+      replaceDocument,
       goToPage,
       zoomIn,
       zoomOut,
