@@ -572,6 +572,13 @@ export interface FATemplateEditorProps {
 
 export interface TemplateEditorAPI {
   loadDocument: (source: DocumentSource) => Promise<void>
+  /**
+   * Replace the loaded document with a new PDF, clearing existing overlay
+   * fields and any virtual blank pages (they belong to the previous PDF and
+   * may not be relevant to the new one). Use loadDocument instead to load the
+   * initial document without clearing fields.
+   */
+  replaceDocument: (source: DocumentSource) => Promise<void>
   /** Returns the currently loaded document source (Blob, ArrayBuffer, URL, etc.), or null if nothing loaded */
   getDocumentSource: () => DocumentSource | null
   /**

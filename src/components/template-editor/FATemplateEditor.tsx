@@ -284,9 +284,11 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
       return () => document.removeEventListener('fullscreenchange', onChange)
     }, [])
 
-    // File upload
+    // File upload — the top bar's "Upload or replace PDF" action. Replacing the
+    // document clears overlay fields and virtual blank pages tied to the old PDF
+    // (a no-op on the initial upload, when there's nothing to clear).
     const handleUpload = useCallback((file: File) => {
-      templateAPI.loadDocument(file)
+      templateAPI.replaceDocument(file)
     }, [templateAPI])
 
     // Save handler — also calls onSave callback for parent integration.
