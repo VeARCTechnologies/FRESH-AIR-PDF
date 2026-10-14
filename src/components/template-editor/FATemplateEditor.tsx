@@ -39,7 +39,6 @@ import { ReadOnlyBanner } from './ReadOnlyBanner'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
 import { downloadBlob } from '@/utils/canvasToPdf'
 import { buildFillablePdf } from '@/utils/fillablePdf'
-import { materializeBlankPages } from '@/utils/mergePdf'
 
 interface PageViewport {
   width: number
@@ -296,16 +295,11 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
     // is used because consumers commonly persist the PDF only when it's a Blob.
     const handleSave = useCallback(async () => {
       if (!onSave || !template) return
-      const source = templateAPI.getDocumentSource()
-      let documentSource = source ?? undefined
-      if (source) {
-        try {
-          const blankPageCount = Math.max(0, state.totalPages - (state.documentInfo?.numPages ?? 0))
-          const bytes = await materializeBlankPages(source, blankPageCount)
-          documentSource = new Blob([bytes as BlobPart], { type: 'application/pdf' })
-        } catch (err) {
-          console.error('Failed to prepare document for save:', err)
-        }
+      let documentSource = templateAPI.getDocumentSource() ?? undefined
+      try {
+        documentSource = (await templateAPI.getUpdatedDocument()) ?? documentSource
+      } catch (err) {
+        console.error('Failed to prepare document for save:', err)
       }
       onSave({
         template,
@@ -313,7 +307,7 @@ export const FATemplateEditor = forwardRef<TemplateEditorAPI, FATemplateEditorPr
         exportJson: templateAPI.exportTemplate(template),
         documentSource,
       })
-    }, [onSave, template, state.fields, state.totalPages, state.documentInfo, templateAPI])
+    }, [onSave, template, state.fields, templateAPI])
 
     // Download handler — generates a fillable PDF with real AcroForm fields
     const handleDownload = useCallback(async () => {

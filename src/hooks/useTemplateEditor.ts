@@ -17,7 +17,7 @@ import type {
   AzureImportOptions,
 } from '@/types'
 import { convertAzureToFields } from '@/core/utils/azureImport'
-import { appendPdfPages, deletePageFromDocument } from '@/utils/mergePdf'
+import { appendPdfPages, deletePageFromDocument, materializeBlankPages } from '@/utils/mergePdf'
 import { PDFDocumentEngine } from '@/core/engine/PDFDocumentEngine'
 import { eventBus } from '@/core/events/EventBus'
 import { ViewerEvent } from '@/types'
@@ -56,6 +56,10 @@ export function useTemplateEditor(
   stateRef.current = { documentInfo, currentPage, zoom }
   const fieldsRef = useRef<TemplateField[]>(initialFields)
   fieldsRef.current = fields
+  // Virtual blank pages aren't baked into documentSource; track the count so
+  // getUpdatedDocument() can materialize them on demand (stable getter).
+  const numExtraPagesRef = useRef(numExtraPages)
+  numExtraPagesRef.current = numExtraPages
 
   // Sync initialFields when they change after mount (e.g. async API data)
   useEffect(() => {
@@ -389,6 +393,12 @@ export function useTemplateEditor(
   const templateAPI: TemplateEditorAPI = useMemo(() => ({
     loadDocument,
     getDocumentSource: () => documentSourceRef.current,
+    getUpdatedDocument: async () => {
+      const source = documentSourceRef.current
+      if (!source) return null
+      const bytes = await materializeBlankPages(source, numExtraPagesRef.current)
+      return new Blob([bytes as BlobPart], { type: 'application/pdf' })
+    },
     getFields: () => fieldsRef.current,
     setFields: (f: TemplateField[]) => { pushHistory(); setFieldsState(f) },
     getUnmappedFields: () => fieldsRef.current.filter(f => !f.systemFieldId),
