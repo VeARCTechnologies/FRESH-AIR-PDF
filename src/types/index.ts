@@ -574,6 +574,13 @@ export interface TemplateEditorAPI {
   loadDocument: (source: DocumentSource) => Promise<void>
   /** Returns the currently loaded document source (Blob, ArrayBuffer, URL, etc.), or null if nothing loaded */
   getDocumentSource: () => DocumentSource | null
+  /**
+   * Returns the full current document with every edit baked in — uploaded pages,
+   * deleted pages, and virtual blank pages — as an `application/pdf` Blob.
+   * Resolves to null if no document is loaded. Use this (not getDocumentSource)
+   * when persisting the edited PDF to a backend.
+   */
+  getUpdatedDocument: () => Promise<Blob | null>
   getFields: () => TemplateField[]
   setFields: (fields: TemplateField[]) => void
   getUnmappedFields: () => TemplateField[]
